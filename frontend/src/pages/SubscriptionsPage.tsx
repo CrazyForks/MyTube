@@ -66,15 +66,15 @@ interface ContinuousDownloadTask {
     playlistName?: string;
 }
 
-const getNextCheckTimestamp = (subscription: Subscription) => {
+function getNextCheckTimestamp(subscription: Subscription): number | undefined {
     if (subscription.lastCheck === undefined || subscription.lastCheck === null) {
         return undefined;
     }
 
     return subscription.lastCheck + (subscription.interval * 60 * 1000);
-};
+}
 
-const parsePositiveInteger = (value: string): number | null => {
+function parsePositiveInteger(value: string): number | null {
     const trimmedValue = value.trim();
     if (!/^\d+$/.test(trimmedValue)) {
         return null;
@@ -84,9 +84,9 @@ const parsePositiveInteger = (value: string): number | null => {
     return Number.isSafeInteger(parsedValue) && parsedValue > 0
         ? parsedValue
         : null;
-};
+}
 
-const SubscriptionsPage: React.FC = () => {
+function SubscriptionsPage(): React.ReactElement {
     const theme = useTheme();
     const isMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
     const { t } = useLanguage();
@@ -135,16 +135,16 @@ const SubscriptionsPage: React.FC = () => {
         gcTime: 10 * 60 * 1000, // Garbage collect after 10 minutes
     });
 
-    const handleUnsubscribeClick = (id: string, author: string, subscriptionType?: string) => {
+    function handleUnsubscribeClick(id: string, author: string, subscriptionType?: string) {
         // Format display name with translated suffix for playlists watchers
-        const displayName = subscriptionType === 'channel_playlists' 
+        const displayName = subscriptionType === 'channel_playlists'
             ? `${author} (${t('playlistsWatcher')})`
             : author;
         setSelectedSubscription({ id, author: displayName });
         setIsUnsubscribeModalOpen(true);
-    };
+    }
 
-    const handleConfirmUnsubscribe = async () => {
+    async function handleConfirmUnsubscribe() {
         if (!selectedSubscription) return;
 
         try {
@@ -158,14 +158,14 @@ const SubscriptionsPage: React.FC = () => {
             setIsUnsubscribeModalOpen(false);
             setSelectedSubscription(null);
         }
-    };
+    }
 
-    const handleCancelTaskClick = (task: ContinuousDownloadTask) => {
+    function handleCancelTaskClick(task: ContinuousDownloadTask) {
         setSelectedTask(task);
         setIsCancelTaskModalOpen(true);
-    };
+    }
 
-    const handleConfirmCancelTask = async () => {
+    async function handleConfirmCancelTask() {
         if (!selectedTask) return;
 
         try {
@@ -179,14 +179,14 @@ const SubscriptionsPage: React.FC = () => {
             setIsCancelTaskModalOpen(false);
             setSelectedTask(null);
         }
-    };
+    }
 
-    const handleDeleteTaskClick = (task: ContinuousDownloadTask) => {
+    function handleDeleteTaskClick(task: ContinuousDownloadTask) {
         setSelectedTask(task);
         setIsDeleteTaskModalOpen(true);
-    };
+    }
 
-    const handleConfirmDeleteTask = async () => {
+    async function handleConfirmDeleteTask() {
         if (!selectedTask) return;
 
         try {
@@ -200,13 +200,13 @@ const SubscriptionsPage: React.FC = () => {
             setIsDeleteTaskModalOpen(false);
             setSelectedTask(null);
         }
-    };
+    }
 
-    const handleClearFinishedClick = () => {
+    function handleClearFinishedClick() {
         setIsClearFinishedModalOpen(true);
-    };
+    }
 
-    const handleConfirmClearFinished = async () => {
+    async function handleConfirmClearFinished() {
         try {
             await api.delete('/subscriptions/tasks/clear-finished');
             showSnackbar(t('tasksCleared'));
@@ -217,7 +217,7 @@ const SubscriptionsPage: React.FC = () => {
         } finally {
             setIsClearFinishedModalOpen(false);
         }
-    };
+    }
 
     function handleCloseUnsubscribeModal() {
         setIsUnsubscribeModalOpen(false);
@@ -251,7 +251,7 @@ const SubscriptionsPage: React.FC = () => {
         void handleConfirmClearFinished();
     }
 
-    const handlePauseSubscription = async (id: string) => {
+    async function handlePauseSubscription(id: string) {
         try {
             await api.put(`/subscriptions/${id}/pause`);
             showSnackbar(t('subscriptionPaused'));
@@ -260,9 +260,9 @@ const SubscriptionsPage: React.FC = () => {
             console.error('Error pausing subscription:', error);
             showSnackbar(t('error'));
         }
-    };
+    }
 
-    const handleResumeSubscription = async (id: string) => {
+    async function handleResumeSubscription(id: string) {
         try {
             await api.put(`/subscriptions/${id}/resume`);
             showSnackbar(t('subscriptionResumed'));
@@ -271,27 +271,27 @@ const SubscriptionsPage: React.FC = () => {
             console.error('Error resuming subscription:', error);
             showSnackbar(t('error'));
         }
-    };
+    }
 
-    const handleStartEditingInterval = (subscription: Subscription) => {
+    function handleStartEditingInterval(subscription: Subscription) {
         setEditingSubscriptionId(subscription.id);
         setEditedInterval(String(subscription.interval));
-    };
+    }
 
-    const handleIntervalInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    function handleIntervalInputChange(event: React.ChangeEvent<HTMLInputElement>) {
         setEditedInterval(event.target.value);
-    };
+    }
 
-    const handleCancelEditingInterval = () => {
+    function handleCancelEditingInterval() {
         setEditingSubscriptionId(null);
         setEditedInterval('');
         setIsSavingInterval(false);
-    };
+    }
 
     const parsedEditedInterval = parsePositiveInteger(editedInterval);
     const isEditedIntervalValid = parsedEditedInterval !== null;
 
-    const handleSaveSubscriptionInterval = async (id: string) => {
+    async function handleSaveSubscriptionInterval(id: string) {
         if (parsedEditedInterval === null) return;
 
         setIsSavingInterval(true);
@@ -306,29 +306,29 @@ const SubscriptionsPage: React.FC = () => {
             showSnackbar(t('subscriptionUpdateFailed'));
             setIsSavingInterval(false);
         }
-    };
+    }
 
-    const handleStartEditingRetention = (subscription: Subscription) => {
+    function handleStartEditingRetention(subscription: Subscription) {
         setEditingRetentionId(subscription.id);
         setEditedRetention(subscription.retentionDays != null ? String(subscription.retentionDays) : '');
-    };
+    }
 
-    const handleRetentionInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    function handleRetentionInputChange(event: React.ChangeEvent<HTMLInputElement>) {
         setEditedRetention(event.target.value);
-    };
+    }
 
-    const handleCancelEditingRetention = () => {
+    function handleCancelEditingRetention() {
         setEditingRetentionId(null);
         setEditedRetention('');
         setIsSavingRetention(false);
-    };
+    }
 
     const parsedEditedRetention = editedRetention.trim() === ''
         ? null
         : parsePositiveInteger(editedRetention);
     const isEditedRetentionValid = editedRetention.trim() === '' || parsedEditedRetention !== null;
 
-    const handleSaveRetention = async (id: string) => {
+    async function handleSaveRetention(id: string) {
         if (!isEditedRetentionValid) return;
 
         setIsSavingRetention(true);
@@ -343,15 +343,15 @@ const SubscriptionsPage: React.FC = () => {
             showSnackbar(t('retentionDaysUpdateFailed'));
             setIsSavingRetention(false);
         }
-    };
+    }
 
-    const formatRetentionDays = (retentionDays: number | null | undefined) => (
-        retentionDays != null
+    function formatRetentionDays(retentionDays: number | null | undefined) {
+        return retentionDays != null
             ? `${retentionDays} ${t('retentionDaysUnit')}`
-            : t('retentionDaysDisabled')
-    );
+            : t('retentionDaysDisabled');
+    }
 
-    const handlePauseTask = async (task: ContinuousDownloadTask) => {
+    async function handlePauseTask(task: ContinuousDownloadTask) {
         try {
             await api.put(`/subscriptions/tasks/${task.id}/pause`);
             showSnackbar(t('taskPaused'));
@@ -360,9 +360,9 @@ const SubscriptionsPage: React.FC = () => {
             console.error('Error pausing task:', error);
             showSnackbar(t('error'));
         }
-    };
+    }
 
-    const handleResumeTask = async (task: ContinuousDownloadTask) => {
+    async function handleResumeTask(task: ContinuousDownloadTask) {
         try {
             await api.put(`/subscriptions/tasks/${task.id}/resume`);
             showSnackbar(t('taskResumed'));
@@ -371,16 +371,116 @@ const SubscriptionsPage: React.FC = () => {
             console.error('Error resuming task:', error);
             showSnackbar(t('error'));
         }
-    };
+    }
 
-    const getTaskProgress = (task: ContinuousDownloadTask) => {
+    function getTaskProgress(task: ContinuousDownloadTask) {
         if (task.totalVideos === 0) return 0;
         return Math.round((task.currentVideoIndex / task.totalVideos) * 100);
-    };
+    }
+
+    function findSubscriptionById(subscriptionId: string | undefined) {
+        if (!subscriptionId) {
+            return undefined;
+        }
+
+        for (const subscription of subscriptions) {
+            if (subscription.id === subscriptionId) {
+                return subscription;
+            }
+        }
+
+        return undefined;
+    }
+
+    function findTaskById(taskId: string | undefined) {
+        if (!taskId) {
+            return undefined;
+        }
+
+        for (const task of tasks) {
+            if (task.id === taskId) {
+                return task;
+            }
+        }
+
+        return undefined;
+    }
+
+    function handleEditIntervalActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const subscription = findSubscriptionById(event.currentTarget.dataset.subscriptionId);
+        if (subscription) {
+            handleStartEditingInterval(subscription);
+        }
+    }
+
+    function handleEditRetentionActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const subscription = findSubscriptionById(event.currentTarget.dataset.subscriptionId);
+        if (subscription) {
+            handleStartEditingRetention(subscription);
+        }
+    }
+
+    function handleUnsubscribeActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const subscription = findSubscriptionById(event.currentTarget.dataset.subscriptionId);
+        if (subscription) {
+            handleUnsubscribeClick(subscription.id, subscription.author, subscription.subscriptionType);
+        }
+    }
+
+    function handleResumeSubscriptionActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const subscriptionId = event.currentTarget.dataset.subscriptionId;
+        if (subscriptionId) {
+            void handleResumeSubscription(subscriptionId);
+        }
+    }
+
+    function handlePauseSubscriptionActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const subscriptionId = event.currentTarget.dataset.subscriptionId;
+        if (subscriptionId) {
+            void handlePauseSubscription(subscriptionId);
+        }
+    }
+
+    function handleCancelTaskActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const task = findTaskById(event.currentTarget.dataset.taskId);
+        if (task) {
+            handleCancelTaskClick(task);
+        }
+    }
+
+    function handlePauseTaskActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const task = findTaskById(event.currentTarget.dataset.taskId);
+        if (task) {
+            void handlePauseTask(task);
+        }
+    }
+
+    function handleResumeTaskActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const task = findTaskById(event.currentTarget.dataset.taskId);
+        if (task) {
+            void handleResumeTask(task);
+        }
+    }
+
+    function handleDeleteTaskActionClick(event: React.MouseEvent<HTMLButtonElement>) {
+        const task = findTaskById(event.currentTarget.dataset.taskId);
+        if (task) {
+            handleDeleteTaskClick(task);
+        }
+    }
 
     function renderIntervalEditor(subscriptionId: string, compact: boolean = false) {
         function handleSaveIntervalClick() {
             void handleSaveSubscriptionInterval(subscriptionId);
+        }
+
+        function handleIntervalKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+            if (event.key === 'Enter') {
+                void handleSaveSubscriptionInterval(subscriptionId);
+            }
+            if (event.key === 'Escape') {
+                handleCancelEditingInterval();
+            }
         }
 
         return (
@@ -406,14 +506,7 @@ const SubscriptionsPage: React.FC = () => {
                             'aria-label': t('checkIntervalMinutes'),
                         },
                     }}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            void handleSaveSubscriptionInterval(subscriptionId);
-                        }
-                        if (e.key === 'Escape') {
-                            handleCancelEditingInterval();
-                        }
-                    }}
+                    onKeyDown={handleIntervalKeyDown}
                     sx={{ width: compact ? 88 : 96 }}
                 />
                 <Typography variant="body2" color="text.secondary">
@@ -446,6 +539,15 @@ const SubscriptionsPage: React.FC = () => {
             void handleSaveRetention(subscriptionId);
         }
 
+        function handleRetentionKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+            if (event.key === 'Enter') {
+                void handleSaveRetention(subscriptionId);
+            }
+            if (event.key === 'Escape') {
+                handleCancelEditingRetention();
+            }
+        }
+
         return (
             <Box
                 sx={{
@@ -470,14 +572,7 @@ const SubscriptionsPage: React.FC = () => {
                             'aria-label': t('retentionDays'),
                         },
                     }}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            void handleSaveRetention(subscriptionId);
-                        }
-                        if (e.key === 'Escape') {
-                            handleCancelEditingRetention();
-                        }
-                    }}
+                    onKeyDown={handleRetentionKeyDown}
                     sx={{ width: compact ? 88 : 96 }}
                 />
                 <Typography variant="body2" color="text.secondary">
@@ -502,6 +597,216 @@ const SubscriptionsPage: React.FC = () => {
                     <Close fontSize="small" />
                 </IconButton>
             </Box>
+        );
+    }
+
+    function renderSubscriptionRow(sub: Subscription) {
+        const isEditingInterval = editingSubscriptionId === sub.id;
+        const isEditingRetention = editingRetentionId === sub.id;
+        const mobileIntervalContent = isEditingInterval ? (
+            renderIntervalEditor(sub.id, true)
+        ) : (
+            <Typography variant="body2" color="text.secondary">
+                {t('interval')}: {sub.interval} {t('minutes')}
+            </Typography>
+        );
+        const mobileRetentionContent = isEditingRetention && !isVisitor ? (
+            renderRetentionEditor(sub.id, true)
+        ) : (
+            <Typography variant="body2" color="text.secondary">
+                {t('retentionDays')}: {formatRetentionDays(sub.retentionDays)}
+            </Typography>
+        );
+        const desktopIntervalContent = isEditingInterval && !isMobileLayout ? (
+            renderIntervalEditor(sub.id)
+        ) : (
+            <>{sub.interval} {t('minutes')}</>
+        );
+        const desktopRetentionContent = isEditingRetention && !isMobileLayout ? (
+            renderRetentionEditor(sub.id)
+        ) : (
+            <Typography variant="body2" color={sub.retentionDays != null ? 'text.primary' : 'text.secondary'}>
+                {formatRetentionDays(sub.retentionDays)}
+            </Typography>
+        );
+
+        return (
+            <TableRow key={sub.id}>
+                <TableCell>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Button
+                            href={sub.authorUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ textTransform: 'none', justifyContent: 'flex-start', p: 0 }}
+                        >
+                            {sub.subscriptionType === 'channel_playlists'
+                                ? `${sub.author} (${t('playlistsWatcher')})`
+                                : sub.author}
+                        </Button>
+                        {isMobileLayout && mobileIntervalContent}
+                        {isMobileLayout && mobileRetentionContent}
+                    </Box>
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.platform}</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                    {desktopIntervalContent}
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, whiteSpace: 'nowrap' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
+                        <Box component="span">
+                            {formatDisplayDateTimeMinutes(sub.lastCheck, t('never'))}
+                        </Box>
+                        <Box component="span">
+                            {formatDisplayDateTimeMinutes(getNextCheckTimestamp(sub), t('never'))}
+                        </Box>
+                    </Box>
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.downloadCount}</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                    {desktopRetentionContent}
+                </TableCell>
+                {!isVisitor && (
+                    <TableCell align="right">
+                        <IconButton
+                            color="primary"
+                            data-subscription-id={sub.id}
+                            onClick={handleEditIntervalActionClick}
+                            title={t('editInterval')}
+                            disabled={isEditingInterval || isSavingInterval || isEditingRetention}
+                        >
+                            <Edit />
+                        </IconButton>
+                        <IconButton
+                            color="primary"
+                            data-subscription-id={sub.id}
+                            onClick={handleEditRetentionActionClick}
+                            title={t('editRetention')}
+                            disabled={isEditingRetention || isSavingRetention || isEditingInterval}
+                        >
+                            <AutoDelete />
+                        </IconButton>
+                        <IconButton
+                            color="error"
+                            data-subscription-id={sub.id}
+                            onClick={handleUnsubscribeActionClick}
+                            title={t('unsubscribe')}
+                            disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
+                        >
+                            <Delete />
+                        </IconButton>
+                        {sub.paused ? (
+                            <IconButton
+                                color="success"
+                                data-subscription-id={sub.id}
+                                onClick={handleResumeSubscriptionActionClick}
+                                title={t('resumeSubscription')}
+                                disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
+                            >
+                                <PlayArrow />
+                            </IconButton>
+                        ) : (
+                            <IconButton
+                                color="warning"
+                                data-subscription-id={sub.id}
+                                onClick={handlePauseSubscriptionActionClick}
+                                title={t('pauseSubscription')}
+                                disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
+                            >
+                                <Pause />
+                            </IconButton>
+                        )}
+                    </TableCell>
+                )}
+            </TableRow>
+        );
+    }
+
+    function renderTaskRow(task: ContinuousDownloadTask) {
+        return (
+            <TableRow key={task.id}>
+                <TableCell>{task.playlistName || task.author}</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.platform}</TableCell>
+                <TableCell>
+                    <Typography
+                        variant="body2"
+                        color={
+                            task.status === 'completed'
+                                ? 'success.main'
+                                : task.status === 'cancelled'
+                                    ? 'error.main'
+                                    : 'info.main'
+                        }
+                    >
+                        {t(`taskStatus${task.status.charAt(0).toUpperCase() + task.status.slice(1)}` as TranslationKey)}
+                    </Typography>
+                </TableCell>
+                <TableCell>
+                    <Box sx={{ minWidth: 100 }}>
+                        <LinearProgress
+                            variant="determinate"
+                            value={getTaskProgress(task)}
+                            sx={{ mb: 0.5 }}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                            {task.currentVideoIndex} / {task.totalVideos || '?'}
+                        </Typography>
+                    </Box>
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.downloadedCount}</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.skippedCount}</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.failedCount}</TableCell>
+                {!isVisitor && (
+                    <TableCell align="right">
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                            {task.status !== 'completed' && task.status !== 'cancelled' && (
+                                <IconButton
+                                    color="error"
+                                    data-task-id={task.id}
+                                    onClick={handleCancelTaskActionClick}
+                                    title={t('cancelTask')}
+                                    size="small"
+                                >
+                                    <Cancel />
+                                </IconButton>
+                            )}
+                            {(task.status === 'active') && (
+                                <IconButton
+                                    color="warning"
+                                    data-task-id={task.id}
+                                    onClick={handlePauseTaskActionClick}
+                                    title={t('pauseTask')}
+                                    size="small"
+                                >
+                                    <Pause />
+                                </IconButton>
+                            )}
+                            {(task.status === 'paused') && (
+                                <IconButton
+                                    color="success"
+                                    data-task-id={task.id}
+                                    onClick={handleResumeTaskActionClick}
+                                    title={t('resumeTask')}
+                                    size="small"
+                                >
+                                    <PlayArrow />
+                                </IconButton>
+                            )}
+                            {(task.status === 'completed' || task.status === 'cancelled') && (
+                                <IconButton
+                                    color="error"
+                                    data-task-id={task.id}
+                                    onClick={handleDeleteTaskActionClick}
+                                    title={t('deleteTask')}
+                                    size="small"
+                                >
+                                    <DeleteOutline />
+                                </IconButton>
+                            )}
+                        </Box>
+                    </TableCell>
+                )}
+            </TableRow>
         );
     }
 
@@ -539,140 +844,7 @@ const SubscriptionsPage: React.FC = () => {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            subscriptions.map((sub) => {
-                                const isEditingInterval = editingSubscriptionId === sub.id;
-                                const isEditingRetention = editingRetentionId === sub.id;
-                                const mobileIntervalContent = isEditingInterval ? (
-                                    renderIntervalEditor(sub.id, true)
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('interval')}: {sub.interval} {t('minutes')}
-                                    </Typography>
-                                );
-                                const mobileRetentionContent = isEditingRetention && !isVisitor ? (
-                                    renderRetentionEditor(sub.id, true)
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary">
-                                        {t('retentionDays')}: {formatRetentionDays(sub.retentionDays)}
-                                    </Typography>
-                                );
-                                const desktopIntervalContent = isEditingInterval && !isMobileLayout ? (
-                                    renderIntervalEditor(sub.id)
-                                ) : (
-                                    <>{sub.interval} {t('minutes')}</>
-                                );
-                                const desktopRetentionContent = isEditingRetention && !isMobileLayout ? (
-                                    renderRetentionEditor(sub.id)
-                                ) : (
-                                    <Typography variant="body2" color={sub.retentionDays != null ? 'text.primary' : 'text.secondary'}>
-                                        {formatRetentionDays(sub.retentionDays)}
-                                    </Typography>
-                                );
-                                function handleEditIntervalClick() {
-                                    handleStartEditingInterval(sub);
-                                }
-                                function handleEditRetentionClick() {
-                                    handleStartEditingRetention(sub);
-                                }
-                                function handleUnsubscribeSubscriptionClick() {
-                                    handleUnsubscribeClick(sub.id, sub.author, sub.subscriptionType);
-                                }
-                                function handleResumeSubscriptionClick() {
-                                    void handleResumeSubscription(sub.id);
-                                }
-                                function handlePauseSubscriptionClick() {
-                                    void handlePauseSubscription(sub.id);
-                                }
-
-                                return (
-                                <TableRow key={sub.id}>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                            <Button
-                                                href={sub.authorUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                sx={{ textTransform: 'none', justifyContent: 'flex-start', p: 0 }}
-                                            >
-                                                {sub.subscriptionType === 'channel_playlists'
-                                                    ? `${sub.author} (${t('playlistsWatcher')})`
-                                                    : sub.author}
-                                            </Button>
-                                            {isMobileLayout && (
-                                                mobileIntervalContent
-                                            )}
-                                            {isMobileLayout && (
-                                                mobileRetentionContent
-                                            )}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.platform}</TableCell>
-                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                        {desktopIntervalContent}
-                                    </TableCell>
-                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, whiteSpace: 'nowrap' }}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
-                                            <Box component="span">
-                                                {formatDisplayDateTimeMinutes(sub.lastCheck, t('never'))}
-                                            </Box>
-                                            <Box component="span">
-                                                {formatDisplayDateTimeMinutes(getNextCheckTimestamp(sub), t('never'))}
-                                            </Box>
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.downloadCount}</TableCell>
-                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                        {desktopRetentionContent}
-                                    </TableCell>
-                                    {!isVisitor && (
-                                        <TableCell align="right">
-                                            <IconButton
-                                                color="primary"
-                                                onClick={handleEditIntervalClick}
-                                                title={t('editInterval')}
-                                                disabled={isEditingInterval || isSavingInterval || isEditingRetention}
-                                            >
-                                                <Edit />
-                                            </IconButton>
-                                            <IconButton
-                                                color="primary"
-                                                onClick={handleEditRetentionClick}
-                                                title={t('editRetention')}
-                                                disabled={isEditingRetention || isSavingRetention || isEditingInterval}
-                                            >
-                                                <AutoDelete />
-                                            </IconButton>
-                                            <IconButton
-                                                color="error"
-                                                onClick={handleUnsubscribeSubscriptionClick}
-                                                title={t('unsubscribe')}
-                                                disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
-                                            >
-                                                <Delete />
-                                            </IconButton>
-                                            {sub.paused ? (
-                                                <IconButton
-                                                    color="success"
-                                                    onClick={handleResumeSubscriptionClick}
-                                                    title={t('resumeSubscription')}
-                                                    disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
-                                                >
-                                                    <PlayArrow />
-                                                </IconButton>
-                                            ) : (
-                                                <IconButton
-                                                    color="warning"
-                                                    onClick={handlePauseSubscriptionClick}
-                                                    title={t('pauseSubscription')}
-                                                    disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
-                                                >
-                                                    <Pause />
-                                                </IconButton>
-                                            )}
-                                        </TableCell>
-                                    )}
-                                </TableRow>
-                            )})
+                            subscriptions.map(renderSubscriptionRow)
                         )}
                     </TableBody>
                 </Table>
@@ -711,102 +883,7 @@ const SubscriptionsPage: React.FC = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {tasks.slice().reverse().map((task) => {
-                                    function handleCancelTaskActionClick() {
-                                        handleCancelTaskClick(task);
-                                    }
-                                    function handlePauseTaskActionClick() {
-                                        void handlePauseTask(task);
-                                    }
-                                    function handleResumeTaskActionClick() {
-                                        void handleResumeTask(task);
-                                    }
-                                    function handleDeleteTaskActionClick() {
-                                        handleDeleteTaskClick(task);
-                                    }
-
-                                    return (
-                                    <TableRow key={task.id}>
-                                        <TableCell>{task.playlistName || task.author}</TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.platform}</TableCell>
-                                        <TableCell>
-                                            <Typography
-                                                variant="body2"
-                                                color={
-                                                    task.status === 'completed'
-                                                        ? 'success.main'
-                                                        : task.status === 'cancelled'
-                                                            ? 'error.main'
-                                                            : 'info.main'
-                                                }
-                                            >
-                                                {t(`taskStatus${task.status.charAt(0).toUpperCase() + task.status.slice(1)}` as TranslationKey)}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box sx={{ minWidth: 100 }}>
-                                                <LinearProgress
-                                                    variant="determinate"
-                                                    value={getTaskProgress(task)}
-                                                    sx={{ mb: 0.5 }}
-                                                />
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {task.currentVideoIndex} / {task.totalVideos || '?'}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.downloadedCount}</TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.skippedCount}</TableCell>
-                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.failedCount}</TableCell>
-                                        {!isVisitor && (
-                                            <TableCell align="right">
-                                                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                                    {task.status !== 'completed' && task.status !== 'cancelled' && (
-                                                        <IconButton
-                                                            color="error"
-                                                            onClick={handleCancelTaskActionClick}
-                                                            title={t('cancelTask')}
-                                                            size="small"
-                                                        >
-                                                            <Cancel />
-                                                        </IconButton>
-                                                    )}
-                                                    {(task.status === 'active') && (
-                                                        <IconButton
-                                                            color="warning"
-                                                            onClick={handlePauseTaskActionClick}
-                                                            title={t('pauseTask')}
-                                                            size="small"
-                                                        >
-                                                            <Pause />
-                                                        </IconButton>
-                                                    )}
-                                                    {(task.status === 'paused') && (
-                                                        <IconButton
-                                                            color="success"
-                                                            onClick={handleResumeTaskActionClick}
-                                                            title={t('resumeTask')}
-                                                            size="small"
-                                                        >
-                                                            <PlayArrow />
-                                                        </IconButton>
-                                                    )}
-                                                    {(task.status === 'completed' || task.status === 'cancelled') && (
-                                                        <IconButton
-                                                            color="error"
-                                                            onClick={handleDeleteTaskActionClick}
-                                                            title={t('deleteTask')}
-                                                            size="small"
-                                                        >
-                                                            <DeleteOutline />
-                                                        </IconButton>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                        )}
-                                    </TableRow>
-                                    );
-                                })}
+                                {tasks.slice().reverse().map(renderTaskRow)}
                             </TableBody>
                         </Table>
                     </TableContainer>
@@ -855,6 +932,6 @@ const SubscriptionsPage: React.FC = () => {
             />
         </Container >
     );
-};
+}
 
 export default SubscriptionsPage;
