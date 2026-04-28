@@ -281,12 +281,6 @@ const SubscriptionsPage: React.FC = () => {
         setEditedRetention(event.target.value);
     };
 
-    function createStartEditingRetentionHandler(subscription: Subscription) {
-        return () => {
-            handleStartEditingRetention(subscription);
-        };
-    }
-
     function createUnsubscribeHandler(subscription: Subscription) {
         return () => {
             handleUnsubscribeClick(subscription.id, subscription.author, subscription.subscriptionType);
@@ -585,7 +579,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="primary"
-                                                onClick={createStartEditingRetentionHandler(sub)}
+                                                onClick={() => void handleStartEditingRetention(sub)}
                                                 title={t('editRetention')}
                                                 disabled={isEditingRetention || isSavingRetention || isEditingInterval}
                                             >
