@@ -281,18 +281,6 @@ const SubscriptionsPage: React.FC = () => {
         setEditedRetention(event.target.value);
     };
 
-    function createStartEditingRetentionHandler(subscription: Subscription) {
-        return () => {
-            handleStartEditingRetention(subscription);
-        };
-    }
-
-    function createUnsubscribeHandler(subscription: Subscription) {
-        return () => {
-            handleUnsubscribeClick(subscription.id, subscription.author, subscription.subscriptionType);
-        };
-    }
-
     const handleCancelEditingRetention = () => {
         setEditingRetentionId(null);
         setEditedRetention('');
@@ -585,7 +573,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="primary"
-                                                onClick={createStartEditingRetentionHandler(sub)}
+                                                onClick={() => { handleStartEditingRetention(sub); }}
                                                 title={t('editRetention')}
                                                 disabled={isEditingRetention || isSavingRetention || isEditingInterval}
                                             >
@@ -593,7 +581,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="error"
-                                                onClick={createUnsubscribeHandler(sub)}
+                                                onClick={() => { handleUnsubscribeClick(sub.id, sub.author, sub.subscriptionType); }}
                                                 title={t('unsubscribe')}
                                                 disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                             >
