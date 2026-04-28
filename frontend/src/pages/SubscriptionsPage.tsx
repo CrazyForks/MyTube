@@ -246,6 +246,10 @@ const SubscriptionsPage: React.FC = () => {
         setEditedInterval(String(subscription.interval));
     };
 
+    const handleIntervalInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setEditedInterval(event.target.value);
+    };
+
     const handleCancelEditingInterval = () => {
         setEditingSubscriptionId(null);
         setEditedInterval('');
@@ -366,7 +370,7 @@ const SubscriptionsPage: React.FC = () => {
         >
             <TextField
                 value={editedInterval}
-                onChange={(e) => setEditedInterval(e.target.value)}
+                onChange={handleIntervalInputChange}
                 size="small"
                 type="number"
                 autoFocus
@@ -394,7 +398,9 @@ const SubscriptionsPage: React.FC = () => {
                 size="small"
                 color="primary"
                 title={t('save')}
-                onClick={() => void handleSaveSubscriptionInterval(subscriptionId)}
+                onClick={() => {
+                    void handleSaveSubscriptionInterval(subscriptionId);
+                }}
                 disabled={!isEditedIntervalValid || isSavingInterval}
             >
                 {isSavingInterval ? <CircularProgress size={18} /> : <Check fontSize="small" />}
@@ -577,7 +583,9 @@ const SubscriptionsPage: React.FC = () => {
                                         <TableCell align="right">
                                             <IconButton
                                                 color="primary"
-                                                onClick={() => handleStartEditingInterval(sub)}
+                                                onClick={() => {
+                                                    handleStartEditingInterval(sub);
+                                                }}
                                                 title={t('editInterval')}
                                                 disabled={isEditingInterval || isSavingInterval || isEditingRetention}
                                             >
@@ -703,7 +711,9 @@ const SubscriptionsPage: React.FC = () => {
                                                     {task.status !== 'completed' && task.status !== 'cancelled' && (
                                                         <IconButton
                                                             color="error"
-                                                            onClick={() => handleCancelTaskClick(task)}
+                                                            onClick={() => {
+                                                                handleCancelTaskClick(task);
+                                                            }}
                                                             title={t('cancelTask')}
                                                             size="small"
                                                         >
@@ -713,7 +723,9 @@ const SubscriptionsPage: React.FC = () => {
                                                     {(task.status === 'active') && (
                                                         <IconButton
                                                             color="warning"
-                                                            onClick={() => handlePauseTask(task)}
+                                                            onClick={() => {
+                                                                void handlePauseTask(task);
+                                                            }}
                                                             title={t('pauseTask')}
                                                             size="small"
                                                         >
@@ -723,7 +735,9 @@ const SubscriptionsPage: React.FC = () => {
                                                     {(task.status === 'paused') && (
                                                         <IconButton
                                                             color="success"
-                                                            onClick={() => handleResumeTask(task)}
+                                                            onClick={() => {
+                                                                void handleResumeTask(task);
+                                                            }}
                                                             title={t('resumeTask')}
                                                             size="small"
                                                         >
@@ -733,7 +747,9 @@ const SubscriptionsPage: React.FC = () => {
                                                     {(task.status === 'completed' || task.status === 'cancelled') && (
                                                         <IconButton
                                                             color="error"
-                                                            onClick={() => handleDeleteTaskClick(task)}
+                                                            onClick={() => {
+                                                                handleDeleteTaskClick(task);
+                                                            }}
                                                             title={t('deleteTask')}
                                                             size="small"
                                                         >
@@ -753,8 +769,12 @@ const SubscriptionsPage: React.FC = () => {
 
             <ConfirmationModal
                 isOpen={isUnsubscribeModalOpen}
-                onClose={() => setIsUnsubscribeModalOpen(false)}
-                onConfirm={handleConfirmUnsubscribe}
+                onClose={() => {
+                    setIsUnsubscribeModalOpen(false);
+                }}
+                onConfirm={() => {
+                    void handleConfirmUnsubscribe();
+                }}
                 title={t('unsubscribe')}
                 message={t('confirmUnsubscribe', { author: selectedSubscription?.author || '' })}
                 confirmText={t('unsubscribe')}
@@ -763,8 +783,12 @@ const SubscriptionsPage: React.FC = () => {
             />
             <ConfirmationModal
                 isOpen={isCancelTaskModalOpen}
-                onClose={() => setIsCancelTaskModalOpen(false)}
-                onConfirm={handleConfirmCancelTask}
+                onClose={() => {
+                    setIsCancelTaskModalOpen(false);
+                }}
+                onConfirm={() => {
+                    void handleConfirmCancelTask();
+                }}
                 title={t('cancelTask')}
                 message={t('confirmCancelTask', { author: selectedTask?.author || '' })}
                 confirmText={t('cancelTask')}
@@ -773,8 +797,12 @@ const SubscriptionsPage: React.FC = () => {
             />
             <ConfirmationModal
                 isOpen={isDeleteTaskModalOpen}
-                onClose={() => setIsDeleteTaskModalOpen(false)}
-                onConfirm={handleConfirmDeleteTask}
+                onClose={() => {
+                    setIsDeleteTaskModalOpen(false);
+                }}
+                onConfirm={() => {
+                    void handleConfirmDeleteTask();
+                }}
                 title={t('deleteTask')}
                 message={t('confirmDeleteTask', { author: selectedTask?.author || '' })}
                 confirmText={t('deleteTask')}
@@ -783,8 +811,12 @@ const SubscriptionsPage: React.FC = () => {
             />
             <ConfirmationModal
                 isOpen={isClearFinishedModalOpen}
-                onClose={() => setIsClearFinishedModalOpen(false)}
-                onConfirm={handleConfirmClearFinished}
+                onClose={() => {
+                    setIsClearFinishedModalOpen(false);
+                }}
+                onConfirm={() => {
+                    void handleConfirmClearFinished();
+                }}
                 title={t('clearFinishedTasks')}
                 message={t('confirmClearFinishedTasks')}
                 confirmText={t('clear')}
