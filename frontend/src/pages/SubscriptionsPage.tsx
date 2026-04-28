@@ -219,6 +219,38 @@ const SubscriptionsPage: React.FC = () => {
         }
     };
 
+    function handleCloseUnsubscribeModal() {
+        setIsUnsubscribeModalOpen(false);
+    }
+
+    function handleConfirmUnsubscribeModal() {
+        void handleConfirmUnsubscribe();
+    }
+
+    function handleCloseCancelTaskModal() {
+        setIsCancelTaskModalOpen(false);
+    }
+
+    function handleConfirmCancelTaskModal() {
+        void handleConfirmCancelTask();
+    }
+
+    function handleCloseDeleteTaskModal() {
+        setIsDeleteTaskModalOpen(false);
+    }
+
+    function handleConfirmDeleteTaskModal() {
+        void handleConfirmDeleteTask();
+    }
+
+    function handleCloseClearFinishedModal() {
+        setIsClearFinishedModalOpen(false);
+    }
+
+    function handleConfirmClearFinishedModal() {
+        void handleConfirmClearFinished();
+    }
+
     const handlePauseSubscription = async (id: string) => {
         try {
             await api.put(`/subscriptions/${id}/pause`);
@@ -285,18 +317,6 @@ const SubscriptionsPage: React.FC = () => {
         setEditedRetention(event.target.value);
     };
 
-    function createStartEditingRetentionHandler(subscription: Subscription) {
-        return () => {
-            handleStartEditingRetention(subscription);
-        };
-    }
-
-    function createUnsubscribeHandler(subscription: Subscription) {
-        return () => {
-            handleUnsubscribeClick(subscription.id, subscription.author, subscription.subscriptionType);
-        };
-    }
-
     const handleCancelEditingRetention = () => {
         setEditingRetentionId(null);
         setEditedRetention('');
@@ -358,66 +378,74 @@ const SubscriptionsPage: React.FC = () => {
         return Math.round((task.currentVideoIndex / task.totalVideos) * 100);
     };
 
-    const renderIntervalEditor = (subscriptionId: string, compact: boolean = false) => (
-        <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                minWidth: compact ? 0 : 180,
-                flexWrap: compact ? 'wrap' : 'nowrap',
-            }}
-        >
-            <TextField
-                value={editedInterval}
-                onChange={handleIntervalInputChange}
-                size="small"
-                type="number"
-                autoFocus
-                slotProps={{
-                    htmlInput: {
-                        min: 1,
-                        step: 1,
-                        'aria-label': t('checkIntervalMinutes'),
-                    },
+    function renderIntervalEditor(subscriptionId: string, compact: boolean = false) {
+        function handleSaveIntervalClick() {
+            void handleSaveSubscriptionInterval(subscriptionId);
+        }
+
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    minWidth: compact ? 0 : 180,
+                    flexWrap: compact ? 'wrap' : 'nowrap',
                 }}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                        void handleSaveSubscriptionInterval(subscriptionId);
-                    }
-                    if (e.key === 'Escape') {
-                        handleCancelEditingInterval();
-                    }
-                }}
-                sx={{ width: compact ? 88 : 96 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-                {t('minutes')}
-            </Typography>
-            <IconButton
-                size="small"
-                color="primary"
-                title={t('save')}
-                onClick={() => {
-                    void handleSaveSubscriptionInterval(subscriptionId);
-                }}
-                disabled={!isEditedIntervalValid || isSavingInterval}
             >
-                {isSavingInterval ? <CircularProgress size={18} /> : <Check fontSize="small" />}
-            </IconButton>
-            <IconButton
-                size="small"
-                color="inherit"
-                title={t('cancel')}
-                onClick={handleCancelEditingInterval}
-                disabled={isSavingInterval}
-            >
-                <Close fontSize="small" />
-            </IconButton>
-        </Box>
-    );
+                <TextField
+                    value={editedInterval}
+                    onChange={handleIntervalInputChange}
+                    size="small"
+                    type="number"
+                    autoFocus
+                    slotProps={{
+                        htmlInput: {
+                            min: 1,
+                            step: 1,
+                            'aria-label': t('checkIntervalMinutes'),
+                        },
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            void handleSaveSubscriptionInterval(subscriptionId);
+                        }
+                        if (e.key === 'Escape') {
+                            handleCancelEditingInterval();
+                        }
+                    }}
+                    sx={{ width: compact ? 88 : 96 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                    {t('minutes')}
+                </Typography>
+                <IconButton
+                    size="small"
+                    color="primary"
+                    title={t('save')}
+                    onClick={handleSaveIntervalClick}
+                    disabled={!isEditedIntervalValid || isSavingInterval}
+                >
+                    {isSavingInterval ? <CircularProgress size={18} /> : <Check fontSize="small" />}
+                </IconButton>
+                <IconButton
+                    size="small"
+                    color="inherit"
+                    title={t('cancel')}
+                    onClick={handleCancelEditingInterval}
+                    disabled={isSavingInterval}
+                >
+                    <Close fontSize="small" />
+                </IconButton>
+            </Box>
+        );
+    }
 
     function renderRetentionEditor(subscriptionId: string, compact: boolean = false) {
+        function handleSaveRetentionClick() {
+            void handleSaveRetention(subscriptionId);
+        }
+
         return (
             <Box
                 sx={{
@@ -459,9 +487,7 @@ const SubscriptionsPage: React.FC = () => {
                     size="small"
                     color="primary"
                     title={t('save')}
-                    onClick={() => {
-                        void handleSaveRetention(subscriptionId);
-                    }}
+                    onClick={handleSaveRetentionClick}
                     disabled={!isEditedRetentionValid || isSavingRetention}
                 >
                     {isSavingRetention ? <CircularProgress size={18} /> : <Check fontSize="small" />}
@@ -516,6 +542,47 @@ const SubscriptionsPage: React.FC = () => {
                             subscriptions.map((sub) => {
                                 const isEditingInterval = editingSubscriptionId === sub.id;
                                 const isEditingRetention = editingRetentionId === sub.id;
+                                const mobileIntervalContent = isEditingInterval ? (
+                                    renderIntervalEditor(sub.id, true)
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        {t('interval')}: {sub.interval} {t('minutes')}
+                                    </Typography>
+                                );
+                                const mobileRetentionContent = isEditingRetention && !isVisitor ? (
+                                    renderRetentionEditor(sub.id, true)
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        {t('retentionDays')}: {formatRetentionDays(sub.retentionDays)}
+                                    </Typography>
+                                );
+                                const desktopIntervalContent = isEditingInterval && !isMobileLayout ? (
+                                    renderIntervalEditor(sub.id)
+                                ) : (
+                                    <>{sub.interval} {t('minutes')}</>
+                                );
+                                const desktopRetentionContent = isEditingRetention && !isMobileLayout ? (
+                                    renderRetentionEditor(sub.id)
+                                ) : (
+                                    <Typography variant="body2" color={sub.retentionDays != null ? 'text.primary' : 'text.secondary'}>
+                                        {formatRetentionDays(sub.retentionDays)}
+                                    </Typography>
+                                );
+                                function handleEditIntervalClick() {
+                                    handleStartEditingInterval(sub);
+                                }
+                                function handleEditRetentionClick() {
+                                    handleStartEditingRetention(sub);
+                                }
+                                function handleUnsubscribeSubscriptionClick() {
+                                    handleUnsubscribeClick(sub.id, sub.author, sub.subscriptionType);
+                                }
+                                function handleResumeSubscriptionClick() {
+                                    void handleResumeSubscription(sub.id);
+                                }
+                                function handlePauseSubscriptionClick() {
+                                    void handlePauseSubscription(sub.id);
+                                }
 
                                 return (
                                 <TableRow key={sub.id}>
@@ -532,32 +599,16 @@ const SubscriptionsPage: React.FC = () => {
                                                     : sub.author}
                                             </Button>
                                             {isMobileLayout && (
-                                                isEditingInterval ? (
-                                                    renderIntervalEditor(sub.id, true)
-                                                ) : (
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {t('interval')}: {sub.interval} {t('minutes')}
-                                                    </Typography>
-                                                )
+                                                mobileIntervalContent
                                             )}
                                             {isMobileLayout && (
-                                                isEditingRetention && !isVisitor ? (
-                                                    renderRetentionEditor(sub.id, true)
-                                                ) : (
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {t('retentionDays')}: {formatRetentionDays(sub.retentionDays)}
-                                                    </Typography>
-                                                )
+                                                mobileRetentionContent
                                             )}
                                         </Box>
                                     </TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.platform}</TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                        {isEditingInterval && !isMobileLayout ? (
-                                            renderIntervalEditor(sub.id)
-                                        ) : (
-                                            <>{sub.interval} {t('minutes')}</>
-                                        )}
+                                        {desktopIntervalContent}
                                     </TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, whiteSpace: 'nowrap' }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
@@ -571,21 +622,13 @@ const SubscriptionsPage: React.FC = () => {
                                     </TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.downloadCount}</TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                        {isEditingRetention && !isMobileLayout ? (
-                                            renderRetentionEditor(sub.id)
-                                        ) : (
-                                            <Typography variant="body2" color={sub.retentionDays != null ? 'text.primary' : 'text.secondary'}>
-                                                {formatRetentionDays(sub.retentionDays)}
-                                            </Typography>
-                                        )}
+                                        {desktopRetentionContent}
                                     </TableCell>
                                     {!isVisitor && (
                                         <TableCell align="right">
                                             <IconButton
                                                 color="primary"
-                                                onClick={() => {
-                                                    handleStartEditingInterval(sub);
-                                                }}
+                                                onClick={handleEditIntervalClick}
                                                 title={t('editInterval')}
                                                 disabled={isEditingInterval || isSavingInterval || isEditingRetention}
                                             >
@@ -593,7 +636,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="primary"
-                                                onClick={createStartEditingRetentionHandler(sub)}
+                                                onClick={handleEditRetentionClick}
                                                 title={t('editRetention')}
                                                 disabled={isEditingRetention || isSavingRetention || isEditingInterval}
                                             >
@@ -601,7 +644,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="error"
-                                                onClick={createUnsubscribeHandler(sub)}
+                                                onClick={handleUnsubscribeSubscriptionClick}
                                                 title={t('unsubscribe')}
                                                 disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                             >
@@ -610,9 +653,7 @@ const SubscriptionsPage: React.FC = () => {
                                             {sub.paused ? (
                                                 <IconButton
                                                     color="success"
-                                                    onClick={() => {
-                                                        void handleResumeSubscription(sub.id);
-                                                    }}
+                                                    onClick={handleResumeSubscriptionClick}
                                                     title={t('resumeSubscription')}
                                                     disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                                 >
@@ -621,9 +662,7 @@ const SubscriptionsPage: React.FC = () => {
                                             ) : (
                                                 <IconButton
                                                     color="warning"
-                                                    onClick={() => {
-                                                        void handlePauseSubscription(sub.id);
-                                                    }}
+                                                    onClick={handlePauseSubscriptionClick}
                                                     title={t('pauseSubscription')}
                                                     disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                                 >
@@ -672,7 +711,21 @@ const SubscriptionsPage: React.FC = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {tasks.slice().reverse().map((task) => (
+                                {tasks.slice().reverse().map((task) => {
+                                    function handleCancelTaskActionClick() {
+                                        handleCancelTaskClick(task);
+                                    }
+                                    function handlePauseTaskActionClick() {
+                                        void handlePauseTask(task);
+                                    }
+                                    function handleResumeTaskActionClick() {
+                                        void handleResumeTask(task);
+                                    }
+                                    function handleDeleteTaskActionClick() {
+                                        handleDeleteTaskClick(task);
+                                    }
+
+                                    return (
                                     <TableRow key={task.id}>
                                         <TableCell>{task.playlistName || task.author}</TableCell>
                                         <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{task.platform}</TableCell>
@@ -711,9 +764,7 @@ const SubscriptionsPage: React.FC = () => {
                                                     {task.status !== 'completed' && task.status !== 'cancelled' && (
                                                         <IconButton
                                                             color="error"
-                                                            onClick={() => {
-                                                                handleCancelTaskClick(task);
-                                                            }}
+                                                            onClick={handleCancelTaskActionClick}
                                                             title={t('cancelTask')}
                                                             size="small"
                                                         >
@@ -723,9 +774,7 @@ const SubscriptionsPage: React.FC = () => {
                                                     {(task.status === 'active') && (
                                                         <IconButton
                                                             color="warning"
-                                                            onClick={() => {
-                                                                void handlePauseTask(task);
-                                                            }}
+                                                            onClick={handlePauseTaskActionClick}
                                                             title={t('pauseTask')}
                                                             size="small"
                                                         >
@@ -735,9 +784,7 @@ const SubscriptionsPage: React.FC = () => {
                                                     {(task.status === 'paused') && (
                                                         <IconButton
                                                             color="success"
-                                                            onClick={() => {
-                                                                void handleResumeTask(task);
-                                                            }}
+                                                            onClick={handleResumeTaskActionClick}
                                                             title={t('resumeTask')}
                                                             size="small"
                                                         >
@@ -747,9 +794,7 @@ const SubscriptionsPage: React.FC = () => {
                                                     {(task.status === 'completed' || task.status === 'cancelled') && (
                                                         <IconButton
                                                             color="error"
-                                                            onClick={() => {
-                                                                handleDeleteTaskClick(task);
-                                                            }}
+                                                            onClick={handleDeleteTaskActionClick}
                                                             title={t('deleteTask')}
                                                             size="small"
                                                         >
@@ -760,7 +805,8 @@ const SubscriptionsPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                     </TableRow>
-                                ))}
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </TableContainer>
@@ -769,12 +815,8 @@ const SubscriptionsPage: React.FC = () => {
 
             <ConfirmationModal
                 isOpen={isUnsubscribeModalOpen}
-                onClose={() => {
-                    setIsUnsubscribeModalOpen(false);
-                }}
-                onConfirm={() => {
-                    void handleConfirmUnsubscribe();
-                }}
+                onClose={handleCloseUnsubscribeModal}
+                onConfirm={handleConfirmUnsubscribeModal}
                 title={t('unsubscribe')}
                 message={t('confirmUnsubscribe', { author: selectedSubscription?.author || '' })}
                 confirmText={t('unsubscribe')}
@@ -783,12 +825,8 @@ const SubscriptionsPage: React.FC = () => {
             />
             <ConfirmationModal
                 isOpen={isCancelTaskModalOpen}
-                onClose={() => {
-                    setIsCancelTaskModalOpen(false);
-                }}
-                onConfirm={() => {
-                    void handleConfirmCancelTask();
-                }}
+                onClose={handleCloseCancelTaskModal}
+                onConfirm={handleConfirmCancelTaskModal}
                 title={t('cancelTask')}
                 message={t('confirmCancelTask', { author: selectedTask?.author || '' })}
                 confirmText={t('cancelTask')}
@@ -797,12 +835,8 @@ const SubscriptionsPage: React.FC = () => {
             />
             <ConfirmationModal
                 isOpen={isDeleteTaskModalOpen}
-                onClose={() => {
-                    setIsDeleteTaskModalOpen(false);
-                }}
-                onConfirm={() => {
-                    void handleConfirmDeleteTask();
-                }}
+                onClose={handleCloseDeleteTaskModal}
+                onConfirm={handleConfirmDeleteTaskModal}
                 title={t('deleteTask')}
                 message={t('confirmDeleteTask', { author: selectedTask?.author || '' })}
                 confirmText={t('deleteTask')}
@@ -811,12 +845,8 @@ const SubscriptionsPage: React.FC = () => {
             />
             <ConfirmationModal
                 isOpen={isClearFinishedModalOpen}
-                onClose={() => {
-                    setIsClearFinishedModalOpen(false);
-                }}
-                onConfirm={() => {
-                    void handleConfirmClearFinished();
-                }}
+                onClose={handleCloseClearFinishedModal}
+                onConfirm={handleConfirmClearFinishedModal}
                 title={t('clearFinishedTasks')}
                 message={t('confirmClearFinishedTasks')}
                 confirmText={t('clear')}
