@@ -277,6 +277,18 @@ const SubscriptionsPage: React.FC = () => {
         setEditedRetention(subscription.retentionDays != null ? String(subscription.retentionDays) : '');
     };
 
+    const handleRetentionInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setEditedRetention(event.target.value);
+    };
+
+    const createStartEditingRetentionHandler = (subscription: Subscription) => () => {
+        handleStartEditingRetention(subscription);
+    };
+
+    const createUnsubscribeHandler = (subscription: Subscription) => () => {
+        handleUnsubscribeClick(subscription.id, subscription.author, subscription.subscriptionType);
+    };
+
     const handleCancelEditingRetention = () => {
         setEditingRetentionId(null);
         setEditedRetention('');
@@ -407,9 +419,7 @@ const SubscriptionsPage: React.FC = () => {
         >
             <TextField
                 value={editedRetention}
-                onChange={(e) => {
-                    setEditedRetention(e.target.value);
-                }}
+                onChange={handleRetentionInputChange}
                 size="small"
                 type="number"
                 placeholder={t('retentionDaysDisabled')}
@@ -567,9 +577,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="primary"
-                                                onClick={() => {
-                                                    handleStartEditingRetention(sub);
-                                                }}
+                                                onClick={createStartEditingRetentionHandler(sub)}
                                                 title={t('editRetention')}
                                                 disabled={isEditingRetention || isSavingRetention || isEditingInterval}
                                             >
@@ -577,7 +585,7 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="error"
-                                                onClick={() => handleUnsubscribeClick(sub.id, sub.author, sub.subscriptionType)}
+                                                onClick={createUnsubscribeHandler(sub)}
                                                 title={t('unsubscribe')}
                                                 disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                             >
