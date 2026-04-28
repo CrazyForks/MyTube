@@ -407,7 +407,9 @@ const SubscriptionsPage: React.FC = () => {
         >
             <TextField
                 value={editedRetention}
-                onChange={(e) => setEditedRetention(e.target.value)}
+                onChange={(e) => {
+                    setEditedRetention(e.target.value);
+                }}
                 size="small"
                 type="number"
                 placeholder={t('retentionDaysDisabled')}
@@ -565,7 +567,9 @@ const SubscriptionsPage: React.FC = () => {
                                             </IconButton>
                                             <IconButton
                                                 color="primary"
-                                                onClick={() => handleStartEditingRetention(sub)}
+                                                onClick={() => {
+                                                    handleStartEditingRetention(sub);
+                                                }}
                                                 title={t('editRetention')}
                                                 disabled={isEditingRetention || isSavingRetention || isEditingInterval}
                                             >
