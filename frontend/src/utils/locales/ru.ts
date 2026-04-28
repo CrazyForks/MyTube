@@ -851,6 +851,13 @@ export const ru = {
     "Вы уверены, что хотите очистить все завершенные задачи (завершенные, отмененные)? Это удалит их из списка, но не удалит загруженные файлы.",
   clear: "Очистить",
 
+  // Subscription Retention
+  retentionDays: "Автоудаление через",
+  retentionDaysUnit: "дн.",
+  retentionDaysDisabled: "Выкл.",
+  editRetention: "Изменить автоудаление",
+  retentionDaysUpdated: "Политика хранения обновлена",
+  retentionDaysUpdateFailed: "Не удалось обновить политику хранения",
 
   // Subscription Pause/Resume
   pause: "Пауза",

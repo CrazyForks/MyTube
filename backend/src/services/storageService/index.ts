@@ -23,6 +23,7 @@ export {
     addDownloadHistoryItem,
     clearDownloadHistory,
     getDownloadHistory,
+    markDownloadHistoryDeletedByVideoId,
     removeDownloadHistoryItem
 } from "./downloadHistory";
 

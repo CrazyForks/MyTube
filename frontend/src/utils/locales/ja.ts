@@ -854,6 +854,13 @@ export const ja = {
     "完了したタスク（完了、キャンセル済み）をすべてクリアしてもよろしいですか？これによりリストからは削除されますが、ダウンロードされたファイルは削除されません。",
   clear: "クリア",
 
+  // Subscription Retention
+  retentionDays: "自動削除まで",
+  retentionDaysUnit: "日",
+  retentionDaysDisabled: "オフ",
+  editRetention: "自動削除を編集",
+  retentionDaysUpdated: "保持ポリシーを更新しました",
+  retentionDaysUpdateFailed: "保持ポリシーの更新に失敗しました",
 
   // Subscription Pause/Resume
   pause: "一時停止",

@@ -858,6 +858,13 @@ export const pt = {
     "Tem certeza de que deseja limpar todas as tarefas concluídas (concluídas, canceladas)? Isso as removerá da lista, mas não excluirá nenhum arquivo baixado.",
   clear: "Limpar",
 
+  // Subscription Retention
+  retentionDays: "Excluir automaticamente após",
+  retentionDaysUnit: "dias",
+  retentionDaysDisabled: "Desativado",
+  editRetention: "Editar exclusão automática",
+  retentionDaysUpdated: "Política de retenção atualizada",
+  retentionDaysUpdateFailed: "Falha ao atualizar a política de retenção",
 
   // Subscription Pause/Resume
   pause: "Pausar",

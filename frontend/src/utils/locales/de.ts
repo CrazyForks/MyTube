@@ -869,6 +869,14 @@ export const de = {
     "Sind Sie sicher, dass Sie alle beendeten Aufgaben (abgeschlossen, abgebrochen) löschen möchten? Dies entfernt sie aus der Liste, löscht aber keine heruntergeladenen Dateien.",
   clear: "Löschen",
 
+  // Subscription Retention
+  retentionDays: "Automatisch löschen nach",
+  retentionDaysUnit: "Tage",
+  retentionDaysDisabled: "Aus",
+  editRetention: "Automatisches Löschen bearbeiten",
+  retentionDaysUpdated: "Aufbewahrungsrichtlinie aktualisiert",
+  retentionDaysUpdateFailed:
+    "Aufbewahrungsrichtlinie konnte nicht aktualisiert werden",
 
   // Subscription Pause/Resume
   pause: "Pause",

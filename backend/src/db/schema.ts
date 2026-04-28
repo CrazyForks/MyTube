@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
     check,
     foreignKey,
+    index,
     integer,
     primaryKey,
     sqliteTable,
@@ -113,23 +114,36 @@ export const downloads = sqliteTable("downloads", {
   type: text("type"),
 });
 
-export const downloadHistory = sqliteTable("download_history", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  author: text("author"),
-  sourceUrl: text("source_url"),
-  finishedAt: integer("finished_at").notNull(), // Timestamp
-  status: text("status").notNull(), // 'success', 'failed', 'skipped', or 'deleted'
-  error: text("error"), // Error message if failed
-  videoPath: text("video_path"), // Path to video file if successful
-  thumbnailPath: text("thumbnail_path"), // Path to thumbnail if successful
-  totalSize: text("total_size"),
-  videoId: text("video_id"), // Reference to video for skipped items
-  downloadedAt: integer("downloaded_at"), // Original download timestamp for deleted items
-  deletedAt: integer("deleted_at"), // Deletion timestamp for deleted items
-  subscriptionId: text("subscription_id"), // Reference to subscription if downloaded via subscription
-  taskId: text("task_id"), // Reference to continuous download task if downloaded via task
-});
+export const downloadHistory = sqliteTable(
+  "download_history",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    author: text("author"),
+    sourceUrl: text("source_url"),
+    finishedAt: integer("finished_at").notNull(), // Timestamp
+    status: text("status").notNull(), // 'success', 'failed', 'skipped', or 'deleted'
+    error: text("error"), // Error message if failed
+    videoPath: text("video_path"), // Path to video file if successful
+    thumbnailPath: text("thumbnail_path"), // Path to thumbnail if successful
+    totalSize: text("total_size"),
+    videoId: text("video_id"), // Reference to video for skipped items
+    downloadedAt: integer("downloaded_at"), // Original download timestamp for deleted items
+    deletedAt: integer("deleted_at"), // Deletion timestamp for deleted items
+    subscriptionId: text("subscription_id"), // Reference to subscription if downloaded via subscription
+    taskId: text("task_id"), // Reference to continuous download task if downloaded via task
+  },
+  (table) => ({
+    retentionSubscriptionIdx: index(
+      "download_history_retention_subscription_idx"
+    ).on(table.subscriptionId, table.status, table.finishedAt),
+    retentionVideoRefsIdx: index("download_history_retention_video_refs_idx").on(
+      table.videoId,
+      table.status,
+      table.subscriptionId
+    ),
+  })
+);
 
 export const subscriptions = sqliteTable("subscriptions", {
   id: text("id").primaryKey(),
@@ -152,6 +166,7 @@ export const subscriptions = sqliteTable("subscriptions", {
   twitchBroadcasterId: text("twitch_broadcaster_id"),
   twitchBroadcasterLogin: text("twitch_broadcaster_login"),
   lastTwitchVideoId: text("last_twitch_video_id"),
+  retentionDays: integer("retention_days"), // Auto-delete subscription-owned videos older than this many days (null = disabled)
 });
 
 // Track downloaded video IDs to prevent re-downloading

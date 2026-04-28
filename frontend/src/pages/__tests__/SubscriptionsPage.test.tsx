@@ -314,6 +314,62 @@ describe('SubscriptionsPage', () => {
         expect(screen.getByTitle('save')).toBeDisabled();
     });
 
+    it('renders subscription retention status', () => {
+        mockSubscriptions = [
+            makeSub({ id: 'sub-retention-on', author: 'Alice', retentionDays: 14 }),
+            makeSub({ id: 'sub-retention-off', author: 'Bob', retentionDays: null }),
+        ];
+        renderPage();
+
+        expect(screen.getByText('14 retentionDaysUnit')).toBeInTheDocument();
+        expect(screen.getByText('retentionDaysDisabled')).toBeInTheDocument();
+    });
+
+    it('updates a subscription retention policy from the row editor', async () => {
+        mockSubscriptions = [makeSub({ id: 'sub-retention', retentionDays: null })];
+        renderPage();
+
+        fireEvent.click(screen.getByTitle('editRetention'));
+        fireEvent.change(screen.getByLabelText('retentionDays'), { target: { value: '21' } });
+
+        await act(async () => {
+            fireEvent.click(screen.getByTitle('save'));
+        });
+
+        expect(api.put).toHaveBeenCalledWith('/subscriptions/sub-retention', { retentionDays: 21 });
+        expect(mockShowSnackbar).toHaveBeenCalledWith('retentionDaysUpdated');
+        expect(mockRefetchSubscriptions).toHaveBeenCalled();
+    });
+
+    it('disables a subscription retention policy with an empty value', async () => {
+        mockSubscriptions = [makeSub({ id: 'sub-retention', retentionDays: 21 })];
+        renderPage();
+
+        fireEvent.click(screen.getByTitle('editRetention'));
+        fireEvent.change(screen.getByLabelText('retentionDays'), { target: { value: '' } });
+
+        await act(async () => {
+            fireEvent.click(screen.getByTitle('save'));
+        });
+
+        expect(api.put).toHaveBeenCalledWith('/subscriptions/sub-retention', { retentionDays: null });
+    });
+
+    it('does not submit invalid subscription retention strings', async () => {
+        mockSubscriptions = [makeSub({ id: 'sub-retention', retentionDays: null })];
+        renderPage();
+
+        fireEvent.click(screen.getByTitle('editRetention'));
+        fireEvent.change(screen.getByLabelText('retentionDays'), { target: { value: '1.5' } });
+
+        await act(async () => {
+            fireEvent.click(screen.getByTitle('save'));
+        });
+
+        expect(api.put).not.toHaveBeenCalled();
+        expect(screen.getByTitle('save')).toBeDisabled();
+    });
+
     it('shows interval details and allows interval editing on mobile layout', () => {
         mockViewport(true);
         mockSubscriptions = [makeSub({ id: 'sub-edit', interval: 45 })];

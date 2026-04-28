@@ -105,7 +105,11 @@
     - `twitchClientId` 和 `twitchClientSecret` 是可选的；缺失时后端会回退到 yt-dlp 轮询的尽力模式
     - 配置 Twitch 应用凭据后，频道识别与轮询稳定性会更好
 - `PUT /api/subscriptions/:id` - 更新订阅
-  - 请求体: `{ interval: number }`
+  - 请求体: `{ interval?: number, retentionDays?: number | null }`
+  - 至少需要提供一个字段；同时提供两个字段时，后端会在一次数据库更新中写入
+  - `interval` 必须是正整数，单位为分钟
+  - `retentionDays` 必须是正整数；传 `null` 或空字符串可关闭自动删除
+  - 自动删除只会清理该订阅下载且已过期的视频；如果同一本地视频仍被其他成功下载历史引用，则不会删除
 - `PUT /api/subscriptions/:id/pause` - 暂停订阅
 - `PUT /api/subscriptions/:id/resume` - 恢复订阅
 - `DELETE /api/subscriptions/:id` - 删除订阅

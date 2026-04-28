@@ -584,6 +584,16 @@ export function initializeStorage(): void {
           .run();
         logger.info("Migration successful: last_twitch_video_id added.");
       }
+
+      if (!subscriptionsColumns.includes("retention_days")) {
+        logger.info(
+          "Migrating database: Adding retention_days column to subscriptions table..."
+        );
+        sqlite
+          .prepare("ALTER TABLE subscriptions ADD COLUMN retention_days INTEGER")
+          .run();
+        logger.info("Migration successful: retention_days added.");
+      }
     } catch (subscriptionsError) {
       // Subscriptions table might not exist yet, ignore error
       logger.debug(
@@ -730,6 +740,7 @@ export function initializeStorage(): void {
       sqlite
         .prepare("ALTER TABLE download_history ADD COLUMN video_id TEXT")
         .run();
+      downloadHistoryColumns.push("video_id");
       logger.info("Migration successful: video_id added to download_history.");
     }
 
@@ -745,6 +756,7 @@ export function initializeStorage(): void {
       logger.info(
         "Migration successful: downloaded_at added to download_history."
       );
+      downloadHistoryColumns.push("downloaded_at");
     }
 
     if (!downloadHistoryColumns.includes("deleted_at")) {
@@ -757,6 +769,33 @@ export function initializeStorage(): void {
       logger.info(
         "Migration successful: deleted_at added to download_history."
       );
+      downloadHistoryColumns.push("deleted_at");
+    }
+
+    if (
+      downloadHistoryColumns.includes("subscription_id") &&
+      downloadHistoryColumns.includes("status") &&
+      downloadHistoryColumns.includes("finished_at")
+    ) {
+      sqlite
+        .prepare(
+          `CREATE INDEX IF NOT EXISTS download_history_retention_subscription_idx
+           ON download_history (subscription_id, status, finished_at)`
+        )
+        .run();
+    }
+
+    if (
+      downloadHistoryColumns.includes("video_id") &&
+      downloadHistoryColumns.includes("status") &&
+      downloadHistoryColumns.includes("subscription_id")
+    ) {
+      sqlite
+        .prepare(
+          `CREATE INDEX IF NOT EXISTS download_history_retention_video_refs_idx
+           ON download_history (video_id, status, subscription_id)`
+        )
+        .run();
     }
 
     // Populate fileSize for existing videos

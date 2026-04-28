@@ -105,7 +105,11 @@ All API routes are mounted under `/api` unless noted otherwise.
     - `twitchClientId` and `twitchClientSecret` are optional; when they are missing, the backend falls back to yt-dlp polling in best-effort mode
     - adding Twitch app credentials improves channel resolution and polling reliability
 - `PUT /api/subscriptions/:id` - Update subscription
-  - Body: `{ interval: number }`
+  - Body: `{ interval?: number, retentionDays?: number | null }`
+  - At least one field is required; when both are provided, they are updated in one database operation
+  - `interval` must be a positive integer in minutes
+  - `retentionDays` must be a positive integer; use `null` or an empty string to disable auto-delete
+  - Auto-delete only removes expired videos downloaded by that subscription when no other successful download history references the same local video
 - `PUT /api/subscriptions/:id/pause` - Pause subscription
 - `PUT /api/subscriptions/:id/resume` - Resume subscription
 - `DELETE /api/subscriptions/:id` - Delete subscription

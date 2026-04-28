@@ -36,7 +36,7 @@ vi.mock("../../services/subscriptionService", () => ({
     unsubscribe: vi.fn(),
     pauseSubscription: vi.fn(),
     resumeSubscription: vi.fn(),
-    updateSubscriptionInterval: vi.fn(),
+    updateSubscriptionSettings: vi.fn(),
     subscribePlaylist: vi.fn(),
     subscribeChannelPlaylistsWatcher: vi.fn(),
   },
@@ -325,15 +325,54 @@ describe("SubscriptionController", () => {
 
       await updateSubscription(req as Request, res as Response);
 
-      expect(subscriptionService.updateSubscriptionInterval).toHaveBeenCalledWith(
+      expect(subscriptionService.updateSubscriptionSettings).toHaveBeenCalledWith(
         "sub-123",
-        90
+        { interval: 90 }
       );
       expect(status).toHaveBeenCalledWith(200);
       expect(json).toHaveBeenCalledWith({
         success: true,
         message: "Subscription updated",
       });
+    });
+
+    it("should update subscription retention", async () => {
+      req.params = { id: "sub-123" };
+      req.body = { retentionDays: 30 };
+
+      await updateSubscription(req as Request, res as Response);
+
+      expect(subscriptionService.updateSubscriptionSettings).toHaveBeenCalledWith(
+        "sub-123",
+        { retentionDays: 30 }
+      );
+      expect(status).toHaveBeenCalledWith(200);
+    });
+
+    it("should disable subscription retention with null", async () => {
+      req.params = { id: "sub-123" };
+      req.body = { retentionDays: null };
+
+      await updateSubscription(req as Request, res as Response);
+
+      expect(subscriptionService.updateSubscriptionSettings).toHaveBeenCalledWith(
+        "sub-123",
+        { retentionDays: null }
+      );
+      expect(status).toHaveBeenCalledWith(200);
+    });
+
+    it("should update subscription interval and retention atomically", async () => {
+      req.params = { id: "sub-123" };
+      req.body = { interval: 45, retentionDays: 14 };
+
+      await updateSubscription(req as Request, res as Response);
+
+      expect(subscriptionService.updateSubscriptionSettings).toHaveBeenCalledWith(
+        "sub-123",
+        { interval: 45, retentionDays: 14 }
+      );
+      expect(status).toHaveBeenCalledWith(200);
     });
 
     it("should reject invalid subscription interval updates", async () => {
@@ -343,7 +382,17 @@ describe("SubscriptionController", () => {
       await expect(
         updateSubscription(req as Request, res as Response)
       ).rejects.toThrow(ValidationError);
-      expect(subscriptionService.updateSubscriptionInterval).not.toHaveBeenCalled();
+      expect(subscriptionService.updateSubscriptionSettings).not.toHaveBeenCalled();
+    });
+
+    it("should reject invalid subscription retention updates", async () => {
+      req.params = { id: "sub-123" };
+      req.body = { retentionDays: 0 };
+
+      await expect(
+        updateSubscription(req as Request, res as Response)
+      ).rejects.toThrow(ValidationError);
+      expect(subscriptionService.updateSubscriptionSettings).not.toHaveBeenCalled();
     });
 
     it("should reject non-integer subscription interval updates", async () => {
@@ -357,7 +406,7 @@ describe("SubscriptionController", () => {
         ).rejects.toThrow(ValidationError);
       }
 
-      expect(subscriptionService.updateSubscriptionInterval).not.toHaveBeenCalled();
+      expect(subscriptionService.updateSubscriptionSettings).not.toHaveBeenCalled();
     });
 
     it("should handle task management endpoints", async () => {

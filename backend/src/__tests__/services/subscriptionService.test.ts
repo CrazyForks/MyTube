@@ -26,12 +26,16 @@ vi.mock('../../db/schema', () => ({
     id: 'id',
     author: 'author',
     authorUrl: 'authorUrl',
+    retentionDays: 'retentionDays',
     // add other fields if needed for referencing columns
   }
 }));
 
 vi.mock('../../services/downloadService');
 vi.mock('../../services/storageService');
+vi.mock('../../services/subscriptionRetentionService', () => ({
+  runSubscriptionRetentionCleanup: vi.fn().mockResolvedValue({}),
+}));
 vi.mock('../../services/downloaders/BilibiliDownloader');
 vi.mock('../../services/downloaders/BilibiliDownloader');
 vi.mock('../../services/downloaders/YtDlpDownloader');
@@ -451,10 +455,10 @@ describe('SubscriptionService', () => {
       expect(db.update).toHaveBeenCalled();
     });
 
-    it('should update subscription interval', async () => {
+    it('should update subscription interval via settings', async () => {
       mockBuilder.then = (cb: any) => Promise.resolve([{ id: 'sub1', author: 'A' }]).then(cb);
 
-      await subscriptionService.updateSubscriptionInterval('sub1', 90);
+      await subscriptionService.updateSubscriptionSettings('sub1', { interval: 90 });
 
       expect(db.update).toHaveBeenCalled();
       expect(mockBuilder.set).toHaveBeenCalledWith({ interval: 90 });
@@ -462,6 +466,37 @@ describe('SubscriptionService', () => {
         id: 'id',
         author: 'author',
       });
+    });
+
+    it('should update subscription retention via settings', async () => {
+      mockBuilder.then = (cb: any) => Promise.resolve([{ id: 'sub1', author: 'A' }]).then(cb);
+
+      await subscriptionService.updateSubscriptionSettings('sub1', { retentionDays: 30 });
+
+      expect(db.update).toHaveBeenCalled();
+      expect(mockBuilder.set).toHaveBeenCalledWith({ retentionDays: 30 });
+    });
+
+    it('should update subscription settings in one database call', async () => {
+      mockBuilder.then = (cb: any) => Promise.resolve([{ id: 'sub1', author: 'A' }]).then(cb);
+
+      await subscriptionService.updateSubscriptionSettings('sub1', {
+        interval: 45,
+        retentionDays: 14,
+      });
+
+      expect(db.update).toHaveBeenCalledTimes(1);
+      expect(mockBuilder.set).toHaveBeenCalledWith({
+        interval: 45,
+        retentionDays: 14,
+      });
+    });
+
+    it('should reject empty subscription settings updates', async () => {
+      await expect(
+        subscriptionService.updateSubscriptionSettings('sub1', {})
+      ).rejects.toThrow('At least one subscription setting is required');
+      expect(db.update).not.toHaveBeenCalled();
     });
 
     it('should throw if pause/resume/update target does not exist', async () => {
@@ -473,12 +508,15 @@ describe('SubscriptionService', () => {
       await expect(subscriptionService.resumeSubscription('missing')).rejects.toThrow(
         'Subscription missing not found'
       );
-      await expect(subscriptionService.updateSubscriptionInterval('missing', 60)).rejects.toThrow(
-        'Subscription not found: missing'
-      );
-      await expect(subscriptionService.updateSubscriptionInterval('missing', 60)).rejects.toBeInstanceOf(
-        NotFoundError
-      );
+      await expect(
+        subscriptionService.updateSubscriptionSettings('missing', { interval: 60 })
+      ).rejects.toThrow('Subscription not found: missing');
+      await expect(
+        subscriptionService.updateSubscriptionSettings('missing', { interval: 60 })
+      ).rejects.toBeInstanceOf(NotFoundError);
+      await expect(
+        subscriptionService.updateSubscriptionSettings('missing', { retentionDays: 30 })
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it('should list subscriptions from database', async () => {
@@ -501,12 +539,16 @@ describe('SubscriptionService', () => {
 
     it('should stop old scheduler task before starting a new one', () => {
       const oldStop = vi.fn();
+      const oldRetentionStop = vi.fn();
       (subscriptionService as any).checkTask = { stop: oldStop };
+      (subscriptionService as any).retentionCleanupTask = { stop: oldRetentionStop };
 
       subscriptionService.startScheduler();
 
       expect(oldStop).toHaveBeenCalled();
+      expect(oldRetentionStop).toHaveBeenCalled();
       expect(cron.schedule).toHaveBeenCalledWith('* * * * *', expect.any(Function));
+      expect(cron.schedule).toHaveBeenCalledWith('0 * * * *', expect.any(Function));
     });
 
     it('should resolve latest playlist URL from first entry id', async () => {

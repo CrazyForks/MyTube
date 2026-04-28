@@ -838,6 +838,13 @@ export const ko = {
     "완료된 모든 작업(완료됨, 취소됨)을 지우시겠습니까? 목록에서 제거되지만 다운로드된 파일은 삭제되지 않습니다.",
   clear: "지우기",
 
+  // Subscription Retention
+  retentionDays: "자동 삭제 기준",
+  retentionDaysUnit: "일",
+  retentionDaysDisabled: "꺼짐",
+  editRetention: "자동 삭제 편집",
+  retentionDaysUpdated: "보존 정책이 업데이트되었습니다",
+  retentionDaysUpdateFailed: "보존 정책 업데이트에 실패했습니다",
 
   // Subscription Pause/Resume
   pause: "일시 중지",

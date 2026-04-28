@@ -867,6 +867,13 @@ export const es = {
     "¿Está seguro de que desea borrar todas las tareas finalizadas (completadas, canceladas)? Esto las eliminará de la lista pero no borrará ningún archivo descargado.",
   clear: "Borrar",
 
+  // Subscription Retention
+  retentionDays: "Eliminar automáticamente después de",
+  retentionDaysUnit: "días",
+  retentionDaysDisabled: "Desactivado",
+  editRetention: "Editar eliminación automática",
+  retentionDaysUpdated: "Política de retención actualizada",
+  retentionDaysUpdateFailed: "No se pudo actualizar la política de retención",
 
   // Subscription Pause/Resume
   pause: "Pausar",

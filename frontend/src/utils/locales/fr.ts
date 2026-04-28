@@ -869,6 +869,14 @@ export const fr = {
     "Êtes-vous sûr de vouloir effacer toutes les tâches terminées (complétées, annulées) ? Cela les supprimera de la liste mais ne supprimera aucun fichier téléchargé.",
   clear: "Effacer",
 
+  // Subscription Retention
+  retentionDays: "Suppression automatique après",
+  retentionDaysUnit: "jours",
+  retentionDaysDisabled: "Désactivé",
+  editRetention: "Modifier la suppression automatique",
+  retentionDaysUpdated: "Règle de conservation mise à jour",
+  retentionDaysUpdateFailed:
+    "Échec de la mise à jour de la règle de conservation",
 
   // Subscription Pause/Resume
   pause: "Pause",

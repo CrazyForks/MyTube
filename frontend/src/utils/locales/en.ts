@@ -812,6 +812,14 @@ export const en = {
     "Are you sure you want to clear all finished tasks (completed, cancelled)? This will remove them from the list but will not delete any downloaded files.",
   clear: "Clear",
 
+  // Subscription Retention
+  retentionDays: "Auto-Delete After",
+  retentionDaysUnit: "days",
+  retentionDaysDisabled: "Off",
+  editRetention: "Edit Auto-Delete",
+  retentionDaysUpdated: "Retention policy updated",
+  retentionDaysUpdateFailed: "Failed to update retention policy",
+
   // Subscription Pause/Resume
   pause: "Pause",
   resume: "Resume",
