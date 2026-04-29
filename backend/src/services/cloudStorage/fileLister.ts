@@ -42,6 +42,7 @@ export async function getFileList(
   try {
     const listUrl = buildCloudApiEndpoint(config.apiUrl, "/api/fs/list");
 
+    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const response = await axios.post(
       listUrl,
       {

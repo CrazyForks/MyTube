@@ -460,10 +460,8 @@ async function main() {
 
   const outputPath = resolvePathWithinCwd(out);
   // nosemgrep: javascript.pathtraversal.rule-non-literal-fs-filename
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   // nosemgrep: javascript.pathtraversal.rule-non-literal-fs-filename
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   await fs.writeFile(outputPath, markdown, "utf8");
 
   console.log(`Report written: ${outputPath}`);

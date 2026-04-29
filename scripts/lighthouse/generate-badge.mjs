@@ -44,7 +44,6 @@ const reportScores = inputPaths
   .map((inputPath) => {
     const safeInputPath = resolvePathWithinCwd(inputPath);
     // nosemgrep: javascript.pathtraversal.rule-non-literal-fs-filename
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
     const report = JSON.parse(fs.readFileSync(safeInputPath, "utf8"));
     const score = report?.categories?.performance?.score;
 

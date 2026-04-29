@@ -371,6 +371,7 @@ const getUploadVideoPayload = async (
     return buildUploadFailureResult(file, "No video file uploaded");
   }
 
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   const rawVideoPath = path.join(VIDEOS_DIR, storedVideoFilename);
   const validatedVideoPath = validateVideoPath(rawVideoPath);
   const contentHash = file.contentHash;

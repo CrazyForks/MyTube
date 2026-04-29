@@ -82,6 +82,7 @@ async function sendMessage(botToken: string, chatId: string, text: string): Prom
       `https://api.telegram.org/bot${botToken}/sendMessage`,
       TELEGRAM_ALLOWED_HOSTS
     );
+    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

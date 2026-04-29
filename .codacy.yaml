@@ -20,6 +20,8 @@ exclude_paths:
   - "frontend/src/**/__tests__/**"
   - "backend/src/__tests__/**"
   - "backend/src/**/__tests__/**"
+  # SQLite Drizzle migrations are analyzed with T-SQL-specific rules in Codacy.
+  - "backend/drizzle/**"
 engines:
   eslint-8:
     exclude_paths:

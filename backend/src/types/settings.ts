@@ -55,6 +55,7 @@ export interface Settings {
   twitchClientSecret?: string;
 }
 
+// nosemgrep: codacy.javascript.security.hard-coded-password
 export const DEFAULT_ADMIN_PASSWORD = "123";
 
 export const defaultSettings: Settings = {

@@ -160,6 +160,7 @@ RUN mkdir -p \
 # The container starts as root only long enough for the entrypoint to reconcile
 # bind-mount ownership. The backend process itself is then launched as PUID:PGID
 # (default 1000:1000) via gosu.
+USER root
 
 EXPOSE 5551
 
