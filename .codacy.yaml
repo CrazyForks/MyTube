@@ -21,6 +21,14 @@ exclude_paths:
   - "backend/src/__tests__/**"
   - "backend/src/**/__tests__/**"
 engines:
+  eslint-8:
+    exclude_paths:
+      - "**/*.cjs"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.mjs"
+      - "**/*.ts"
+      - "**/*.tsx"
   opengrep:
     exclude_paths:
       - "backend/src/utils/security.ts"
