@@ -42,6 +42,7 @@ const createSelectBuilder = (rows: unknown[] | Promise<unknown[]>) => {
   const builder: any = {
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     then: (resolve: any, reject: any) => Promise.resolve(rows).then(resolve, reject),
   };
@@ -159,7 +160,7 @@ describe("subscriptionRetentionService", () => {
     expect(summary.deletedVideos).toBe(0);
   });
 
-  it("passes limit to the candidates query", async () => {
+  it("passes order and limit to the candidates query", async () => {
     queueSelectResults(
       [{ id: "sub-1", author: "Author", retentionDays: 7 }],
       [{ id: "history-1", videoId: "video-1", finishedAt: Date.now() - 8 * 24 * 60 * 60 * 1000 }],
@@ -170,7 +171,32 @@ describe("subscriptionRetentionService", () => {
 
     // The second db.select call is the candidates query; it must have .limit() applied.
     const candidatesBuilder = vi.mocked(db.select).mock.results[1].value;
+    expect(candidatesBuilder.orderBy).toHaveBeenCalled();
     expect(candidatesBuilder.limit).toHaveBeenCalledWith(100);
+  });
+
+  it("continues past a full shared batch to delete later owned videos", async () => {
+    const oldFinishedAt = Date.now() - 8 * 24 * 60 * 60 * 1000;
+    const sharedCandidates = Array.from({ length: 100 }, (_, index) => ({
+      id: `history-shared-${index.toString().padStart(3, "0")}`,
+      videoId: `shared-video-${index}`,
+      finishedAt: oldFinishedAt + index,
+    }));
+
+    queueSelectResults(
+      [{ id: "sub-1", author: "Author", retentionDays: 7 }],
+      sharedCandidates,
+      sharedCandidates.map((candidate) => ({ videoId: candidate.videoId })),
+      [{ id: "history-owned-1", videoId: "owned-video-1", finishedAt: oldFinishedAt + 101 }],
+      []
+    );
+
+    const summary = await runSubscriptionRetentionCleanup();
+
+    expect(storageService.deleteVideo).toHaveBeenCalledTimes(1);
+    expect(storageService.deleteVideo).toHaveBeenCalledWith("owned-video-1");
+    expect(summary.skippedSharedVideos).toBe(100);
+    expect(summary.deletedVideos).toBe(1);
   });
 
   it("returns early when another cleanup is already running", async () => {
