@@ -184,16 +184,61 @@ export const updateSubscription = async (
   res: Response
 ): Promise<void> => {
   const { id } = req.params;
-  const parsedInterval = parsePositiveInteger(req.body.interval);
+  const hasInterval = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "interval"
+  );
+  const hasRetentionDays = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "retentionDays"
+  );
 
-  if (parsedInterval === null) {
+  if (!hasInterval && !hasRetentionDays) {
     throw new ValidationError(
-      "Interval must be a positive integer",
-      "interval"
+      "At least one subscription setting is required",
+      "body"
     );
   }
 
-  await subscriptionService.updateSubscriptionInterval(id, parsedInterval);
+  let parsedInterval: number | undefined;
+  if (hasInterval) {
+    const parsed = parsePositiveInteger(req.body.interval);
+    if (parsed === null) {
+      throw new ValidationError(
+        "Interval must be a positive integer",
+        "interval"
+      );
+    }
+    parsedInterval = parsed;
+  }
+
+  let retentionDays: number | null | undefined;
+  if (hasRetentionDays) {
+    const rawRetentionDays = req.body.retentionDays;
+    if (rawRetentionDays === null || rawRetentionDays === "") {
+      retentionDays = null;
+    } else {
+      const parsed = parsePositiveInteger(rawRetentionDays);
+      if (parsed === null) {
+        throw new ValidationError(
+          "retentionDays must be a positive integer or null",
+          "retentionDays"
+        );
+      }
+      retentionDays = parsed;
+    }
+  }
+
+  const updates: { interval?: number; retentionDays?: number | null } = {};
+  if (parsedInterval !== undefined) {
+    updates.interval = parsedInterval;
+  }
+  if (retentionDays !== undefined) {
+    updates.retentionDays = retentionDays;
+  }
+
+  await subscriptionService.updateSubscriptionSettings(id, updates);
+
   res.status(200).json(successMessage("Subscription updated"));
 };
 

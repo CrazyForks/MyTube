@@ -854,6 +854,16 @@ export const ja = {
     "完了したタスク（完了、キャンセル済み）をすべてクリアしてもよろしいですか？これによりリストからは削除されますが、ダウンロードされたファイルは削除されません。",
   clear: "クリア",
 
+  // Subscription Retention
+  retentionDays: "自動削除まで",
+  retentionDaysUnit: "日",
+  retentionDaysDisabled: "オフ",
+  editRetention: "自動削除を編集",
+  retentionDaysHelpTitle: "自動削除について",
+  retentionDaysHelpMessage:
+    "設定すると、MyTube はこのサブスクリプションでダウンロードされた動画を指定日数の経過後に自動削除します。オフのままなら動画は保持されます。別のサブスクリプションまたは手動ダウンロードの履歴で参照されている動画はスキップされます。",
+  retentionDaysUpdated: "保持ポリシーを更新しました",
+  retentionDaysUpdateFailed: "保持ポリシーの更新に失敗しました",
 
   // Subscription Pause/Resume
   pause: "一時停止",

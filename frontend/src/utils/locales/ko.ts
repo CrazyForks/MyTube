@@ -838,6 +838,16 @@ export const ko = {
     "완료된 모든 작업(완료됨, 취소됨)을 지우시겠습니까? 목록에서 제거되지만 다운로드된 파일은 삭제되지 않습니다.",
   clear: "지우기",
 
+  // Subscription Retention
+  retentionDays: "자동 삭제 기준",
+  retentionDaysUnit: "일",
+  retentionDaysDisabled: "꺼짐",
+  editRetention: "자동 삭제 편집",
+  retentionDaysHelpTitle: "자동 삭제 정보",
+  retentionDaysHelpMessage:
+    "설정하면 MyTube가 이 구독에서 다운로드한 동영상을 지정한 일수가 지난 뒤 자동으로 삭제합니다. 꺼짐으로 두면 동영상이 유지됩니다. 다른 구독이나 수동 다운로드 기록에서 아직 참조하는 동영상은 건너뜁니다.",
+  retentionDaysUpdated: "보존 정책이 업데이트되었습니다",
+  retentionDaysUpdateFailed: "보존 정책 업데이트에 실패했습니다",
 
   // Subscription Pause/Resume
   pause: "일시 중지",

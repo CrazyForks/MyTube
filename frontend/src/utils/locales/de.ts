@@ -869,6 +869,17 @@ export const de = {
     "Sind Sie sicher, dass Sie alle beendeten Aufgaben (abgeschlossen, abgebrochen) löschen möchten? Dies entfernt sie aus der Liste, löscht aber keine heruntergeladenen Dateien.",
   clear: "Löschen",
 
+  // Subscription Retention
+  retentionDays: "Automatisch löschen nach",
+  retentionDaysUnit: "Tage",
+  retentionDaysDisabled: "Aus",
+  editRetention: "Automatisches Löschen bearbeiten",
+  retentionDaysHelpTitle: "Über automatisches Löschen",
+  retentionDaysHelpMessage:
+    "Wenn aktiviert, löscht MyTube Videos, die von diesem Abonnement heruntergeladen wurden, nach der festgelegten Anzahl von Tagen automatisch. Bei Aus bleiben Videos erhalten. Videos, die noch von einem anderen Abonnement oder einem manuellen Download referenziert werden, werden übersprungen.",
+  retentionDaysUpdated: "Aufbewahrungsrichtlinie aktualisiert",
+  retentionDaysUpdateFailed:
+    "Aufbewahrungsrichtlinie konnte nicht aktualisiert werden",
 
   // Subscription Pause/Resume
   pause: "Pause",

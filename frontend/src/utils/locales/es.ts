@@ -867,6 +867,16 @@ export const es = {
     "¿Está seguro de que desea borrar todas las tareas finalizadas (completadas, canceladas)? Esto las eliminará de la lista pero no borrará ningún archivo descargado.",
   clear: "Borrar",
 
+  // Subscription Retention
+  retentionDays: "Eliminar automáticamente después de",
+  retentionDaysUnit: "días",
+  retentionDaysDisabled: "Desactivado",
+  editRetention: "Editar eliminación automática",
+  retentionDaysHelpTitle: "Acerca de la eliminación automática",
+  retentionDaysHelpMessage:
+    "Cuando está configurado, MyTube elimina automáticamente los videos descargados por esta suscripción después del número de días indicado. Déjalo desactivado para conservarlos. Se omiten los videos que aún estén referenciados por otra suscripción o descarga manual.",
+  retentionDaysUpdated: "Política de retención actualizada",
+  retentionDaysUpdateFailed: "No se pudo actualizar la política de retención",
 
   // Subscription Pause/Resume
   pause: "Pausar",

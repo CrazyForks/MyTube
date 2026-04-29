@@ -29,6 +29,7 @@ import {
 } from "./downloaders/ytdlp/ytdlpTwitch";
 import { YtDlpDownloader } from "./downloaders/YtDlpDownloader";
 import * as storageService from "./storageService";
+import { runSubscriptionRetentionCleanup } from "./subscriptionRetentionService";
 import { TwitchVideoInfo, twitchApiService } from "./twitchService";
 
 const MAX_TWITCH_SUBSCRIPTION_PAGES_PER_CHECK = 5;
@@ -114,11 +115,15 @@ export interface Subscription {
   twitchBroadcasterId?: string;
   twitchBroadcasterLogin?: string;
   lastTwitchVideoId?: string;
+
+  // Retention
+  retentionDays?: number | null;
 }
 
 export class SubscriptionService {
   private static instance: SubscriptionService;
   private checkTask: ScheduledTask | null = null;
+  private retentionCleanupTask: ScheduledTask | null = null;
   private isCheckingSubscriptions = false;
 
   private constructor() {}
@@ -663,10 +668,20 @@ export class SubscriptionService {
     logger.info(`Paused subscription ${id} (${existing[0].author})`);
   }
 
-  async updateSubscriptionInterval(id: string, interval: number): Promise<void> {
+  async updateSubscriptionSettings(
+    id: string,
+    updates: { interval?: number; retentionDays?: number | null }
+  ): Promise<void> {
+    if (Object.keys(updates).length === 0) {
+      throw new ValidationError(
+        "At least one subscription setting is required",
+        "body"
+      );
+    }
+
     const updated = await db
       .update(subscriptions)
-      .set({ interval })
+      .set(updates)
       .where(eq(subscriptions.id, id))
       .returning({
         id: subscriptions.id,
@@ -678,7 +693,7 @@ export class SubscriptionService {
     }
 
     logger.info(
-      `Updated subscription ${updated[0].id} (${updated[0].author}) interval to ${interval} minutes`
+      `Updated subscription ${updated[0].id} (${updated[0].author}) settings: ${JSON.stringify(updates)}`
     );
   }
 
@@ -1310,6 +1325,10 @@ export class SubscriptionService {
     if (this.checkTask) {
       this.checkTask.stop();
     }
+    if (this.retentionCleanupTask) {
+      this.retentionCleanupTask.stop();
+    }
+
     // Run every minute
     this.checkTask = cron.schedule("* * * * *", () => {
       this.checkSubscriptions().catch((error) => {
@@ -1317,6 +1336,17 @@ export class SubscriptionService {
       });
     });
     logger.info("Subscription scheduler started (node-cron).");
+
+    // Run subscription retention cleanup once per hour
+    this.retentionCleanupTask = cron.schedule("0 * * * *", () => {
+      runSubscriptionRetentionCleanup().catch((error) => {
+        logger.error(
+          "Subscription retention cleanup failed:",
+          error instanceof Error ? error : new Error(String(error))
+        );
+      });
+    });
+    logger.info("Subscription retention scheduler started (node-cron).");
   }
 
   // Helper to get latest video URL based on platform

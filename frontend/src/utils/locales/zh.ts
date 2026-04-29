@@ -803,6 +803,16 @@ export const zh = {
     "您确定要清除所有已完成的任务（包括已完成和已取消）吗？这只会将其从列表中移除，不会删除任何已下载的文件。",
   clear: "清除",
 
+  // Subscription Retention
+  retentionDays: "自动删除期限",
+  retentionDaysUnit: "天",
+  retentionDaysDisabled: "关闭",
+  editRetention: "编辑自动删除",
+  retentionDaysHelpTitle: "关于自动删除",
+  retentionDaysHelpMessage:
+    "设置后，MyTube 会在该订阅下载的视频超过指定天数后自动删除。保持关闭则不会自动删除。仍被其他订阅或手动下载记录引用的视频会被跳过。",
+  retentionDaysUpdated: "保留策略已更新",
+  retentionDaysUpdateFailed: "保留策略更新失败",
 
   // Subscription Pause/Resume
   pause: "暂停",

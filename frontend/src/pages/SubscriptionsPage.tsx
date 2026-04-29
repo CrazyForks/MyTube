@@ -1,4 +1,4 @@
-import { Cancel, Check, Close, Delete, DeleteOutline, Edit, Pause, PlayArrow } from '@mui/icons-material';
+import { AutoDelete, Cancel, Check, Close, Delete, DeleteOutline, Edit, HelpOutline, Pause, PlayArrow } from '@mui/icons-material';
 import {
     Box,
     Button,
@@ -44,6 +44,7 @@ interface Subscription {
     playlistTitle?: string;
     subscriptionType?: string; // 'author' or 'playlist'
     collectionId?: string;
+    retentionDays?: number | null;
 }
 
 interface ContinuousDownloadTask {
@@ -101,6 +102,10 @@ const SubscriptionsPage: React.FC = () => {
     const [editingSubscriptionId, setEditingSubscriptionId] = useState<string | null>(null);
     const [editedInterval, setEditedInterval] = useState<string>('');
     const [isSavingInterval, setIsSavingInterval] = useState(false);
+    const [editingRetentionId, setEditingRetentionId] = useState<string | null>(null);
+    const [editedRetention, setEditedRetention] = useState<string>('');
+    const [isSavingRetention, setIsSavingRetention] = useState(false);
+    const [isRetentionHelpOpen, setIsRetentionHelpOpen] = useState(false);
 
     // Use React Query for better caching and memory management
     const { data: subscriptions = [], refetch: refetchSubscriptions } = useQuery({
@@ -268,6 +273,63 @@ const SubscriptionsPage: React.FC = () => {
         }
     };
 
+    const handleStartEditingRetention = (subscription: Subscription) => {
+        setEditingRetentionId(subscription.id);
+        setEditedRetention(subscription.retentionDays != null ? String(subscription.retentionDays) : '');
+    };
+
+    const handleRetentionInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setEditedRetention(event.target.value);
+    };
+
+    function createUnsubscribeHandler(subscription: Subscription) {
+        return () => {
+            handleUnsubscribeClick(subscription.id, subscription.author, subscription.subscriptionType);
+        };
+    }
+
+    const handleCancelEditingRetention = () => {
+        setEditingRetentionId(null);
+        setEditedRetention('');
+        setIsSavingRetention(false);
+    };
+
+    const handleOpenRetentionHelp = () => {
+        setIsRetentionHelpOpen(true);
+    };
+
+    const handleCloseRetentionHelp = () => {
+        setIsRetentionHelpOpen(false);
+    };
+
+    const parsedEditedRetention = editedRetention.trim() === ''
+        ? null
+        : parsePositiveInteger(editedRetention);
+    const isEditedRetentionValid = editedRetention.trim() === '' || parsedEditedRetention !== null;
+
+    const handleSaveRetention = async (id: string) => {
+        if (!isEditedRetentionValid) return;
+
+        setIsSavingRetention(true);
+
+        try {
+            await api.put(`/subscriptions/${id}`, { retentionDays: parsedEditedRetention });
+            showSnackbar(t('retentionDaysUpdated'));
+            await refetchSubscriptions();
+            handleCancelEditingRetention();
+        } catch (error) {
+            console.error('Error updating subscription retention:', error);
+            showSnackbar(t('retentionDaysUpdateFailed'));
+            setIsSavingRetention(false);
+        }
+    };
+
+    const formatRetentionDays = (retentionDays: number | null | undefined) => (
+        retentionDays != null
+            ? `${retentionDays} ${t('retentionDaysUnit')}`
+            : t('retentionDaysDisabled')
+    );
+
     const handlePauseTask = async (task: ContinuousDownloadTask) => {
         try {
             await api.put(`/subscriptions/tasks/${task.id}/pause`);
@@ -352,6 +414,68 @@ const SubscriptionsPage: React.FC = () => {
         </Box>
     );
 
+    function renderRetentionEditor(subscriptionId: string, compact: boolean = false) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    minWidth: compact ? 0 : 210,
+                    flexWrap: compact ? 'wrap' : 'nowrap',
+                }}
+            >
+                <TextField
+                    value={editedRetention}
+                    onChange={handleRetentionInputChange}
+                    size="small"
+                    type="number"
+                    placeholder={t('retentionDaysDisabled')}
+                    autoFocus
+                    slotProps={{
+                        htmlInput: {
+                            min: 1,
+                            step: 1,
+                            'aria-label': t('retentionDays'),
+                        },
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            void handleSaveRetention(subscriptionId);
+                        }
+                        if (e.key === 'Escape') {
+                            handleCancelEditingRetention();
+                        }
+                    }}
+                    sx={{ width: compact ? 88 : 96 }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                    {t('retentionDaysUnit')}
+                </Typography>
+                <IconButton
+                    size="small"
+                    color="primary"
+                    title={t('save')}
+                    onClick={() => {
+                        void handleSaveRetention(subscriptionId);
+                    }}
+                    disabled={!isEditedRetentionValid || isSavingRetention}
+                >
+                    {isSavingRetention ? <CircularProgress size={18} /> : <Check fontSize="small" />}
+                </IconButton>
+                <IconButton
+                    size="small"
+                    color="inherit"
+                    title={t('cancel')}
+                    onClick={handleCancelEditingRetention}
+                    disabled={isSavingRetention}
+                >
+                    <Close fontSize="small" />
+                </IconButton>
+            </Box>
+        );
+    }
+
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
@@ -372,13 +496,27 @@ const SubscriptionsPage: React.FC = () => {
                                 </Box>
                             </TableCell>
                             <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('downloads')}</TableCell>
+                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <Box component="span">{t('retentionDays')}</Box>
+                                    <IconButton
+                                        size="small"
+                                        onClick={handleOpenRetentionHelp}
+                                        aria-label={t('retentionDaysHelpTitle')}
+                                        title={t('retentionDaysHelpTitle')}
+                                        sx={{ p: 0.25 }}
+                                    >
+                                        <HelpOutline fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            </TableCell>
                             {!isVisitor && <TableCell align="right">{t('actions')}</TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {subscriptions.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={isVisitor ? 5 : 6} align="center">
+                                <TableCell colSpan={isVisitor ? 6 : 7} align="center">
                                     <Typography color="text.secondary" sx={{ py: 4 }}>
                                         {t('noVideos')} {/* Reusing "No videos found" or similar if "No subscriptions" key missing */}
                                     </Typography>
@@ -387,6 +525,7 @@ const SubscriptionsPage: React.FC = () => {
                         ) : (
                             subscriptions.map((sub) => {
                                 const isEditingInterval = editingSubscriptionId === sub.id;
+                                const isEditingRetention = editingRetentionId === sub.id;
 
                                 return (
                                 <TableRow key={sub.id}>
@@ -411,6 +550,15 @@ const SubscriptionsPage: React.FC = () => {
                                                     </Typography>
                                                 )
                                             )}
+                                            {isMobileLayout && (
+                                                isEditingRetention && !isVisitor ? (
+                                                    renderRetentionEditor(sub.id, true)
+                                                ) : (
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {t('retentionDays')}: {formatRetentionDays(sub.retentionDays)}
+                                                    </Typography>
+                                                )
+                                            )}
                                         </Box>
                                     </TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.platform}</TableCell>
@@ -432,39 +580,60 @@ const SubscriptionsPage: React.FC = () => {
                                         </Box>
                                     </TableCell>
                                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{sub.downloadCount}</TableCell>
+                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                                        {isEditingRetention && !isMobileLayout ? (
+                                            renderRetentionEditor(sub.id)
+                                        ) : (
+                                            <Typography variant="body2" color={sub.retentionDays != null ? 'text.primary' : 'text.secondary'}>
+                                                {formatRetentionDays(sub.retentionDays)}
+                                            </Typography>
+                                        )}
+                                    </TableCell>
                                     {!isVisitor && (
                                         <TableCell align="right">
                                             <IconButton
                                                 color="primary"
                                                 onClick={() => handleStartEditingInterval(sub)}
                                                 title={t('editInterval')}
-                                                disabled={isEditingInterval || isSavingInterval}
+                                                disabled={isEditingInterval || isSavingInterval || isEditingRetention}
                                             >
                                                 <Edit />
                                             </IconButton>
                                             <IconButton
+                                                color="primary"
+                                                onClick={() => void handleStartEditingRetention(sub)}
+                                                title={t('editRetention')}
+                                                disabled={isEditingRetention || isSavingRetention || isEditingInterval}
+                                            >
+                                                <AutoDelete />
+                                            </IconButton>
+                                            <IconButton
                                                 color="error"
-                                                onClick={() => handleUnsubscribeClick(sub.id, sub.author, sub.subscriptionType)}
+                                                onClick={createUnsubscribeHandler(sub)}
                                                 title={t('unsubscribe')}
-                                                disabled={isEditingInterval && isSavingInterval}
+                                                disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                             >
                                                 <Delete />
                                             </IconButton>
                                             {sub.paused ? (
                                                 <IconButton
                                                     color="success"
-                                                    onClick={() => handleResumeSubscription(sub.id)}
+                                                    onClick={() => {
+                                                        void handleResumeSubscription(sub.id);
+                                                    }}
                                                     title={t('resumeSubscription')}
-                                                    disabled={isEditingInterval && isSavingInterval}
+                                                    disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                                 >
                                                     <PlayArrow />
                                                 </IconButton>
                                             ) : (
                                                 <IconButton
                                                     color="warning"
-                                                    onClick={() => handlePauseSubscription(sub.id)}
+                                                    onClick={() => {
+                                                        void handlePauseSubscription(sub.id);
+                                                    }}
                                                     title={t('pauseSubscription')}
-                                                    disabled={isEditingInterval && isSavingInterval}
+                                                    disabled={(isEditingInterval && isSavingInterval) || (isEditingRetention && isSavingRetention)}
                                                 >
                                                     <Pause />
                                                 </IconButton>
@@ -637,6 +806,15 @@ const SubscriptionsPage: React.FC = () => {
                 confirmText={t('clear')}
                 cancelText={t('cancel')}
                 isDanger
+            />
+            <ConfirmationModal
+                isOpen={isRetentionHelpOpen}
+                onClose={handleCloseRetentionHelp}
+                onConfirm={handleCloseRetentionHelp}
+                title={t('retentionDaysHelpTitle')}
+                message={t('retentionDaysHelpMessage')}
+                confirmText={t('ok')}
+                showCancel={false}
             />
         </Container >
     );

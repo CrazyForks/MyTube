@@ -851,6 +851,16 @@ export const ru = {
     "Вы уверены, что хотите очистить все завершенные задачи (завершенные, отмененные)? Это удалит их из списка, но не удалит загруженные файлы.",
   clear: "Очистить",
 
+  // Subscription Retention
+  retentionDays: "Автоудаление через",
+  retentionDaysUnit: "дн.",
+  retentionDaysDisabled: "Выкл.",
+  editRetention: "Изменить автоудаление",
+  retentionDaysHelpTitle: "Об автоудалении",
+  retentionDaysHelpMessage:
+    "Если задано, MyTube автоматически удаляет видео, загруженные этой подпиской, после указанного числа дней. Оставьте выключенным, чтобы хранить видео. Видео, на которые еще ссылается другая подписка или ручная загрузка, пропускаются.",
+  retentionDaysUpdated: "Политика хранения обновлена",
+  retentionDaysUpdateFailed: "Не удалось обновить политику хранения",
 
   // Subscription Pause/Resume
   pause: "Пауза",

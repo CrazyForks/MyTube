@@ -829,6 +829,16 @@ export const ar = {
     "هل أنت متأكد أنك تريد مسح جميع المهام المنتهية (المكتملة، الملغاة)؟ سيؤدي هذا إلى إزالتها من القائمة ولكن لن يحذف أي ملفات تم تنزيلها.",
   clear: "مسح",
 
+  // Subscription Retention
+  retentionDays: "الحذف التلقائي بعد",
+  retentionDaysUnit: "أيام",
+  retentionDaysDisabled: "إيقاف",
+  editRetention: "تعديل الحذف التلقائي",
+  retentionDaysHelpTitle: "حول الحذف التلقائي",
+  retentionDaysHelpMessage:
+    "عند التفعيل، يحذف MyTube تلقائيًا الفيديوهات التي نزّلها هذا الاشتراك بعد عدد الأيام المحدد. اتركه متوقفًا للاحتفاظ بالفيديوهات. يتم تخطي الفيديوهات التي لا تزال مشارًا إليها من اشتراك آخر أو تنزيل يدوي.",
+  retentionDaysUpdated: "تم تحديث سياسة الاحتفاظ",
+  retentionDaysUpdateFailed: "فشل تحديث سياسة الاحتفاظ",
 
   // Subscription Pause/Resume
   pause: "إيقاف مؤقت",

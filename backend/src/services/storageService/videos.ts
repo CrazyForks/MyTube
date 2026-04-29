@@ -21,6 +21,7 @@ import {
   removeFileIfExists,
   renamePath,
 } from "./fileHelpers";
+import { markDownloadHistoryDeletedByVideoId } from "./downloadHistory";
 import { markVideoDownloadDeleted } from "./videoDownloadTracking";
 import {
   deleteSmallThumbnailMirrorSync,
@@ -581,8 +582,11 @@ export function deleteVideo(id: string): boolean {
     // Remove subtitle files
     deleteSubtitleFiles(videoToDelete, allCollections);
 
-    // Mark video as deleted in download history
+    const deletedAt = Date.now();
+
+    // Mark download tracking and history as deleted
     markVideoDownloadDeleted(id);
+    markDownloadHistoryDeletedByVideoId(id, deletedAt);
 
     // Delete from DB
     db.delete(videos).where(eq(videos.id, id)).run();

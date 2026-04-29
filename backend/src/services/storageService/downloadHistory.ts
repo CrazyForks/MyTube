@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { DatabaseError } from "../../errors/DownloadErrors";
 import { db } from "../../db";
 import { downloadHistory } from "../../db/schema";
@@ -66,6 +66,29 @@ export function removeDownloadHistoryItem(id: string): void {
     db.delete(downloadHistory).where(eq(downloadHistory.id, id)).run();
   } catch (error) {
     logger.error("Error removing download history item", error instanceof Error ? error : new Error(String(error)));
+    // Don't throw - download history operations are non-critical
+  }
+}
+
+export function markDownloadHistoryDeletedByVideoId(
+  videoId: string,
+  deletedAt: number = Date.now()
+): void {
+  try {
+    db.update(downloadHistory)
+      .set({ status: "deleted", deletedAt })
+      .where(
+        and(
+          eq(downloadHistory.videoId, videoId),
+          eq(downloadHistory.status, "success")
+        )
+      )
+      .run();
+  } catch (error) {
+    logger.error(
+      "Error marking download history as deleted",
+      error instanceof Error ? error : new Error(String(error))
+    );
     // Don't throw - download history operations are non-critical
   }
 }

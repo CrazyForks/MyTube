@@ -7,6 +7,7 @@ import { DatabaseError } from "../../../errors/DownloadErrors";
 import { formatVideoFilename } from "../../../utils/helpers";
 import * as collections from "../collections";
 import * as fileHelpers from "../fileHelpers";
+import { markDownloadHistoryDeletedByVideoId } from "../downloadHistory";
 import { markVideoDownloadDeleted } from "../videoDownloadTracking";
 import {
   deleteVideo,
@@ -31,6 +32,9 @@ vi.mock("../../../db", () => ({
 vi.mock("fs-extra");
 vi.mock("../fileHelpers");
 vi.mock("../collections");
+vi.mock("../downloadHistory", () => ({
+  markDownloadHistoryDeletedByVideoId: vi.fn(),
+}));
 vi.mock("../videoDownloadTracking", () => ({
   markVideoDownloadDeleted: vi.fn(),
 }));
@@ -514,6 +518,10 @@ describe("storageService videos", () => {
       const ok = deleteVideo("1");
       expect(ok).toBe(true);
       expect(markVideoDownloadDeleted).toHaveBeenCalledWith("1");
+      expect(markDownloadHistoryDeletedByVideoId).toHaveBeenCalledWith(
+        "1",
+        expect.any(Number)
+      );
       expect(fs.unlinkSync).toHaveBeenCalledWith("/abs/videos/video.mp4");
       expect(fs.unlinkSync).toHaveBeenCalledWith(
         path.join(path.join(process.cwd(), "uploads"), "avatars/avatar.jpg")
