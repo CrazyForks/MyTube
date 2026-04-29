@@ -808,6 +808,9 @@ export const zh = {
   retentionDaysUnit: "天",
   retentionDaysDisabled: "关闭",
   editRetention: "编辑自动删除",
+  retentionDaysHelpTitle: "关于自动删除",
+  retentionDaysHelpMessage:
+    "设置后，MyTube 会在该订阅下载的视频超过指定天数后自动删除。保持关闭则不会自动删除。仍被其他订阅或手动下载记录引用的视频会被跳过。",
   retentionDaysUpdated: "保留策略已更新",
   retentionDaysUpdateFailed: "保留策略更新失败",
 

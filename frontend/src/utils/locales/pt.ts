@@ -863,6 +863,9 @@ export const pt = {
   retentionDaysUnit: "dias",
   retentionDaysDisabled: "Desativado",
   editRetention: "Editar exclusão automática",
+  retentionDaysHelpTitle: "Sobre a exclusão automática",
+  retentionDaysHelpMessage:
+    "Quando configurado, o MyTube exclui automaticamente os vídeos baixados por esta inscrição após o número de dias definido. Deixe desativado para manter os vídeos. Vídeos ainda referenciados por outra inscrição ou por um download manual são ignorados.",
   retentionDaysUpdated: "Política de retenção atualizada",
   retentionDaysUpdateFailed: "Falha ao atualizar a política de retenção",
 

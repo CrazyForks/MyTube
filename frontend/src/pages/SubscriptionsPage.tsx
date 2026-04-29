@@ -1,4 +1,4 @@
-import { AutoDelete, Cancel, Check, Close, Delete, DeleteOutline, Edit, Pause, PlayArrow } from '@mui/icons-material';
+import { AutoDelete, Cancel, Check, Close, Delete, DeleteOutline, Edit, HelpOutline, Pause, PlayArrow } from '@mui/icons-material';
 import {
     Box,
     Button,
@@ -105,6 +105,7 @@ const SubscriptionsPage: React.FC = () => {
     const [editingRetentionId, setEditingRetentionId] = useState<string | null>(null);
     const [editedRetention, setEditedRetention] = useState<string>('');
     const [isSavingRetention, setIsSavingRetention] = useState(false);
+    const [isRetentionHelpOpen, setIsRetentionHelpOpen] = useState(false);
 
     // Use React Query for better caching and memory management
     const { data: subscriptions = [], refetch: refetchSubscriptions } = useQuery({
@@ -291,6 +292,14 @@ const SubscriptionsPage: React.FC = () => {
         setEditingRetentionId(null);
         setEditedRetention('');
         setIsSavingRetention(false);
+    };
+
+    const handleOpenRetentionHelp = () => {
+        setIsRetentionHelpOpen(true);
+    };
+
+    const handleCloseRetentionHelp = () => {
+        setIsRetentionHelpOpen(false);
     };
 
     const parsedEditedRetention = editedRetention.trim() === ''
@@ -487,7 +496,20 @@ const SubscriptionsPage: React.FC = () => {
                                 </Box>
                             </TableCell>
                             <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('downloads')}</TableCell>
-                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{t('retentionDays')}</TableCell>
+                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <Box component="span">{t('retentionDays')}</Box>
+                                    <IconButton
+                                        size="small"
+                                        onClick={handleOpenRetentionHelp}
+                                        aria-label={t('retentionDaysHelpTitle')}
+                                        title={t('retentionDaysHelpTitle')}
+                                        sx={{ p: 0.25 }}
+                                    >
+                                        <HelpOutline fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            </TableCell>
                             {!isVisitor && <TableCell align="right">{t('actions')}</TableCell>}
                         </TableRow>
                     </TableHead>
@@ -784,6 +806,15 @@ const SubscriptionsPage: React.FC = () => {
                 confirmText={t('clear')}
                 cancelText={t('cancel')}
                 isDanger
+            />
+            <ConfirmationModal
+                isOpen={isRetentionHelpOpen}
+                onClose={handleCloseRetentionHelp}
+                onConfirm={handleCloseRetentionHelp}
+                title={t('retentionDaysHelpTitle')}
+                message={t('retentionDaysHelpMessage')}
+                confirmText={t('ok')}
+                showCancel={false}
             />
         </Container >
     );

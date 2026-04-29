@@ -817,6 +817,9 @@ export const en = {
   retentionDaysUnit: "days",
   retentionDaysDisabled: "Off",
   editRetention: "Edit Auto-Delete",
+  retentionDaysHelpTitle: "About Auto-Delete",
+  retentionDaysHelpMessage:
+    "When set, MyTube automatically deletes videos downloaded by this subscription after the configured number of days. Leave it Off to keep videos. Videos still referenced by another subscription or manual download are skipped.",
   retentionDaysUpdated: "Retention policy updated",
   retentionDaysUpdateFailed: "Failed to update retention policy",
 

@@ -325,6 +325,17 @@ describe('SubscriptionsPage', () => {
         expect(screen.getByText('retentionDaysDisabled')).toBeInTheDocument();
     });
 
+    it('opens subscription retention help from the table header', () => {
+        mockSubscriptions = [makeSub({ id: 'sub-retention', retentionDays: 14 })];
+        renderPage();
+
+        fireEvent.click(screen.getByLabelText('retentionDaysHelpTitle'));
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('retentionDaysHelpTitle')).toBeInTheDocument();
+        expect(screen.getByText('retentionDaysHelpMessage')).toBeInTheDocument();
+    });
+
     it('updates a subscription retention policy from the row editor', async () => {
         mockSubscriptions = [makeSub({ id: 'sub-retention', retentionDays: null })];
         renderPage();

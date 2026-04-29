@@ -874,6 +874,9 @@ export const de = {
   retentionDaysUnit: "Tage",
   retentionDaysDisabled: "Aus",
   editRetention: "Automatisches Löschen bearbeiten",
+  retentionDaysHelpTitle: "Über automatisches Löschen",
+  retentionDaysHelpMessage:
+    "Wenn aktiviert, löscht MyTube Videos, die von diesem Abonnement heruntergeladen wurden, nach der festgelegten Anzahl von Tagen automatisch. Bei Aus bleiben Videos erhalten. Videos, die noch von einem anderen Abonnement oder einem manuellen Download referenziert werden, werden übersprungen.",
   retentionDaysUpdated: "Aufbewahrungsrichtlinie aktualisiert",
   retentionDaysUpdateFailed:
     "Aufbewahrungsrichtlinie konnte nicht aktualisiert werden",

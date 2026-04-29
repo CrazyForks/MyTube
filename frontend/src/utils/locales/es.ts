@@ -872,6 +872,9 @@ export const es = {
   retentionDaysUnit: "días",
   retentionDaysDisabled: "Desactivado",
   editRetention: "Editar eliminación automática",
+  retentionDaysHelpTitle: "Acerca de la eliminación automática",
+  retentionDaysHelpMessage:
+    "Cuando está configurado, MyTube elimina automáticamente los videos descargados por esta suscripción después del número de días indicado. Déjalo desactivado para conservarlos. Se omiten los videos que aún estén referenciados por otra suscripción o descarga manual.",
   retentionDaysUpdated: "Política de retención actualizada",
   retentionDaysUpdateFailed: "No se pudo actualizar la política de retención",
 

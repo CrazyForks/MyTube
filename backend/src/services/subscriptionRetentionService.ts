@@ -4,6 +4,10 @@ import { downloadHistory, subscriptions } from "../db/schema";
 import { logger } from "../utils/logger";
 import * as storageService from "./storageService";
 
+// Max videos to delete per subscription per hourly tick, preventing a spike
+// when retention is first enabled on a subscription with a large backlog.
+const CANDIDATES_PER_SUBSCRIPTION_PER_RUN = 100;
+
 export interface SubscriptionRetentionCleanupSummary {
   checkedSubscriptions: number;
   deletedVideos: number;
@@ -108,7 +112,14 @@ export async function runSubscriptionRetentionCleanup(): Promise<SubscriptionRet
             isNotNull(downloadHistory.videoId),
             lt(downloadHistory.finishedAt, cutoffMs)
           )
+        )
+        .limit(CANDIDATES_PER_SUBSCRIPTION_PER_RUN);
+
+      if (candidates.length === CANDIDATES_PER_SUBSCRIPTION_PER_RUN) {
+        logger.info(
+          `[RetentionCleanup] Reached per-run limit (${CANDIDATES_PER_SUBSCRIPTION_PER_RUN}) for subscription "${subscription.author}" — remaining videos will be cleaned up in the next tick`
         );
+      }
 
       const uniqueCandidates = Array.from(
         new Map(

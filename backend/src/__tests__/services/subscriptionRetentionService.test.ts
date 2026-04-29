@@ -159,6 +159,20 @@ describe("subscriptionRetentionService", () => {
     expect(summary.deletedVideos).toBe(0);
   });
 
+  it("passes limit to the candidates query", async () => {
+    queueSelectResults(
+      [{ id: "sub-1", author: "Author", retentionDays: 7 }],
+      [{ id: "history-1", videoId: "video-1", finishedAt: Date.now() - 8 * 24 * 60 * 60 * 1000 }],
+      []
+    );
+
+    await runSubscriptionRetentionCleanup();
+
+    // The second db.select call is the candidates query; it must have .limit() applied.
+    const candidatesBuilder = vi.mocked(db.select).mock.results[1].value;
+    expect(candidatesBuilder.limit).toHaveBeenCalledWith(100);
+  });
+
   it("returns early when another cleanup is already running", async () => {
     let releaseFirstSelect: ((rows: unknown[]) => void) | undefined;
     const firstSelect = new Promise<unknown[]>((resolve) => {

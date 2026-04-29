@@ -874,6 +874,9 @@ export const fr = {
   retentionDaysUnit: "jours",
   retentionDaysDisabled: "Désactivé",
   editRetention: "Modifier la suppression automatique",
+  retentionDaysHelpTitle: "À propos de la suppression automatique",
+  retentionDaysHelpMessage:
+    "Quand cette option est définie, MyTube supprime automatiquement les vidéos téléchargées par cet abonnement après le nombre de jours indiqué. Laissez-la désactivée pour conserver les vidéos. Les vidéos encore référencées par un autre abonnement ou un téléchargement manuel sont ignorées.",
   retentionDaysUpdated: "Règle de conservation mise à jour",
   retentionDaysUpdateFailed:
     "Échec de la mise à jour de la règle de conservation",
