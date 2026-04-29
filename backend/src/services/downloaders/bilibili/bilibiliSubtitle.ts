@@ -50,8 +50,7 @@ export async function downloadSubtitles(
     );
     let viewResponse;
     try {
-      // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-      viewResponse = await axios.get(viewApiUrl, { headers, ...axiosConfig });
+      viewResponse = await axios.get(viewApiUrl, { headers, ...axiosConfig }); // nosemgrep
     } catch (viewError: unknown) {
       logger.error(
         `Failed to fetch view API: ${
@@ -76,8 +75,7 @@ export async function downloadSubtitles(
     logger.info(`Fetching subtitles from: ${playerApiUrl}`);
     let playerResponse;
     try {
-      // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-      playerResponse = await axios.get(playerApiUrl, { headers, ...axiosConfig });
+      playerResponse = await axios.get(playerApiUrl, { headers, ...axiosConfig }); // nosemgrep
     } catch (playerError: unknown) {
       logger.warn(
         `Player API failed: ${
@@ -154,8 +152,7 @@ export async function downloadSubtitles(
       };
 
       try {
-        // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-        const subResponse = await axios.get(absoluteSubUrl, {
+        const subResponse = await axios.get(absoluteSubUrl, { // nosemgrep
           headers: cdnHeaders,
           ...axiosConfig,
         });

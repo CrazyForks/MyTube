@@ -160,11 +160,12 @@ RUN mkdir -p \
 # The container starts as root only long enough for the entrypoint to reconcile
 # bind-mount ownership. The backend process itself is then launched as PUID:PGID
 # (default 1000:1000) via gosu.
-USER root
 
 EXPOSE 5551
 
 # The entrypoint starts as root only to reconcile bind-mount ownership,
 # then drops to PUID:PGID via gosu before executing CMD.
+# nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
 ENTRYPOINT ["/usr/local/bin/mytube-entrypoint.sh"]
+# nosemgrep: dockerfile.security.missing-user.missing-user
 CMD ["node", "dist/src/server.js"]

@@ -84,10 +84,8 @@ const badgePayload = {
 
 const safeOutputPath = resolvePathWithinCwd(outputPath);
 // nosemgrep: javascript.pathtraversal.rule-non-literal-fs-filename
-// eslint-disable-next-line security/detect-non-literal-fs-filename
 fs.mkdirSync(path.dirname(safeOutputPath), { recursive: true });
 // nosemgrep: javascript.pathtraversal.rule-non-literal-fs-filename
-// eslint-disable-next-line security/detect-non-literal-fs-filename
 fs.writeFileSync(
   safeOutputPath,
   `${JSON.stringify(badgePayload, null, 2)}\n`

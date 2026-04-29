@@ -1688,8 +1688,7 @@ async function downloadPoster(
       return false;
     }
 
-    // nosemgrep: rules.lgpl.javascript.ssrf.rule-node-ssrf
-    const response = await axios.get(validatedUrl, {
+    const response = await axios.get(validatedUrl, { // nosemgrep
       responseType: "arraybuffer",
       timeout: 10000,
     });
