@@ -30,6 +30,7 @@ import {
 import { YtDlpDownloader } from "./downloaders/YtDlpDownloader";
 import * as storageService from "./storageService";
 import { runSubscriptionRetentionCleanup } from "./subscriptionRetentionService";
+import { TelegramService } from "./telegramService";
 import { TwitchVideoInfo, twitchApiService } from "./twitchService";
 
 const MAX_TWITCH_SUBSCRIPTION_PAGES_PER_CHECK = 5;
@@ -86,6 +87,35 @@ function shouldFallbackToTwitchYtDlp(error: unknown): boolean {
     error instanceof Error &&
     error.message.includes("Twitch API is temporarily rate limited")
   );
+}
+
+function notifySubscriptionDownloadResult(context: {
+  taskTitle: string;
+  status: "success" | "fail";
+  sourceUrl?: string;
+  error?: string;
+}): void {
+  void TelegramService.notifyTaskComplete(context).catch((error) => {
+    logger.error(
+      "Subscription Telegram notification failed:",
+      error instanceof Error ? error : new Error(String(error))
+    );
+  });
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object") {
+    const maybeError = error as { message?: unknown };
+    if (typeof maybeError.message === "string") {
+      return maybeError.message;
+    }
+  }
+
+  return fallback;
 }
 
 export interface Subscription {
@@ -793,6 +823,8 @@ export class SubscriptionService {
 
               // 3. Download the video
               let downloadResult: any;
+              let videoDownloaded = false;
+              let downloadedVideoTitle = `New video from ${sub.author}`;
               try {
                 if (sub.platform === "Bilibili") {
                   downloadResult = await downloadSingleBilibiliPart(
@@ -808,9 +840,12 @@ export class SubscriptionService {
                 // Add to download history on success
                 const videoData =
                   downloadResult?.videoData || downloadResult || {};
+                downloadedVideoTitle =
+                  videoData.title || `New video from ${sub.author}`;
+                videoDownloaded = true;
                 storageService.addDownloadHistoryItem({
                   id: uuidv4(),
-                  title: videoData.title || `New video from ${sub.author}`,
+                  title: downloadedVideoTitle,
                   author: videoData.author || sub.author,
                   sourceUrl: latestVideoUrl,
                   finishedAt: Date.now(),
@@ -856,15 +891,46 @@ export class SubscriptionService {
                   );
                   continue;
                 } else {
+                  notifySubscriptionDownloadResult({
+                    taskTitle: downloadedVideoTitle,
+                    status: "success",
+                    sourceUrl: latestVideoUrl,
+                  });
                   logger.debug(
                     `Successfully processed subscription ${sub.id} (${sub.author})`
                   );
                 }
               } catch (downloadError: any) {
+                const errorMessage = getErrorMessage(
+                  downloadError,
+                  "Download failed"
+                );
+
+                if (videoDownloaded) {
+                  logger.error(
+                    `Error updating subscription after video download for ${sub.author}:`,
+                    downloadError
+                  );
+
+                  notifySubscriptionDownloadResult({
+                    taskTitle: downloadedVideoTitle,
+                    status: "fail",
+                    sourceUrl: latestVideoUrl,
+                    error: `Subscription processing failed after download: ${errorMessage}`,
+                  });
+                  continue;
+                }
+
                 logger.error(
                   `Error downloading subscription video for ${sub.author}:`,
                   downloadError
                 );
+                notifySubscriptionDownloadResult({
+                  taskTitle: `Video from ${sub.author}`,
+                  status: "fail",
+                  sourceUrl: latestVideoUrl,
+                  error: errorMessage,
+                });
 
                 // Add to download history on failure
                 storageService.addDownloadHistoryItem({
@@ -874,7 +940,7 @@ export class SubscriptionService {
                   sourceUrl: latestVideoUrl,
                   finishedAt: Date.now(),
                   status: "failed",
-                  error: downloadError.message || "Download failed",
+                  error: errorMessage,
                   subscriptionId: sub.id,
                 });
 
@@ -923,6 +989,8 @@ export class SubscriptionService {
                 );
 
                 // Download the short
+                let shortDownloaded = false;
+                let downloadedShortTitle = `New short from ${sub.author}`;
                 try {
                   const downloadResult = await downloadYouTubeVideo(
                     latestShortUrl
@@ -931,9 +999,12 @@ export class SubscriptionService {
                   // Add to download history on success
                   const videoData =
                     downloadResult?.videoData || downloadResult || {};
+                  downloadedShortTitle =
+                    videoData.title || `New short from ${sub.author}`;
+                  shortDownloaded = true;
                   storageService.addDownloadHistoryItem({
                     id: uuidv4(),
-                    title: videoData.title || `New short from ${sub.author}`,
+                    title: downloadedShortTitle,
                     author: videoData.author || sub.author,
                     sourceUrl: latestShortUrl,
                     finishedAt: Date.now(),
@@ -945,22 +1016,61 @@ export class SubscriptionService {
                   });
 
                   // Update subscription record with new short link
-                  await db
+                  const shortUpdateResult = await db
                     .update(subscriptions)
                     .set({
                       lastShortVideoLink: latestShortUrl,
                       downloadCount: (sub.downloadCount || 0) + 1,
                     })
-                    .where(eq(subscriptions.id, sub.id));
+                    .where(eq(subscriptions.id, sub.id))
+                    .returning({ id: subscriptions.id });
+
+                  if (shortUpdateResult.length === 0) {
+                    logger.warn(
+                      `Subscription ${sub.id} (${sub.author}) was deleted after short download completed`
+                    );
+                    continue;
+                  }
+
+                  notifySubscriptionDownloadResult({
+                    taskTitle: downloadedShortTitle,
+                    status: "success",
+                    sourceUrl: latestShortUrl,
+                  });
 
                   logger.debug(
                     `Successfully processed short for ${sub.author}: ${latestShortUrl}`
                   );
                 } catch (downloadError: unknown) {
                   logger.error(
-                    `Error downloading subscription short for ${sub.author}:`,
-                    downloadError instanceof Error ? downloadError : new Error(String(downloadError))
+                    shortDownloaded
+                      ? `Error updating subscription after short download for ${sub.author}:`
+                      : `Error downloading subscription short for ${sub.author}:`,
+                    downloadError instanceof Error
+                      ? downloadError
+                      : new Error(String(downloadError))
                   );
+
+                  const errorMessage = getErrorMessage(
+                    downloadError,
+                    "Download failed"
+                  );
+                  if (shortDownloaded) {
+                    notifySubscriptionDownloadResult({
+                      taskTitle: downloadedShortTitle,
+                      status: "fail",
+                      sourceUrl: latestShortUrl,
+                      error: `Subscription processing failed after short download: ${errorMessage}`,
+                    });
+                    continue;
+                  }
+
+                  notifySubscriptionDownloadResult({
+                    taskTitle: `Short from ${sub.author}`,
+                    status: "fail",
+                    sourceUrl: latestShortUrl,
+                    error: errorMessage,
+                  });
 
                   storageService.addDownloadHistoryItem({
                     id: uuidv4(),
@@ -969,7 +1079,7 @@ export class SubscriptionService {
                     sourceUrl: latestShortUrl,
                     finishedAt: Date.now(),
                     status: "failed",
-                    error: downloadError instanceof Error ? downloadError.message : "Download failed",
+                    error: errorMessage,
                     subscriptionId: sub.id,
                   });
                 }
@@ -1271,13 +1381,17 @@ export class SubscriptionService {
         continue;
       }
 
+      let twitchVideoDownloaded = false;
+      let downloadedTwitchTitle = video.title || `Video from ${sub.author}`;
       try {
         const downloadResult = await downloadYouTubeVideo(video.url);
         const videoData = downloadResult?.videoData || downloadResult || {};
+        downloadedTwitchTitle = videoData.title || video.title;
+        twitchVideoDownloaded = true;
 
         storageService.addDownloadHistoryItem({
           id: uuidv4(),
-          title: videoData.title || video.title,
+          title: downloadedTwitchTitle,
           author: videoData.author || video.authorName || sub.author,
           sourceUrl: video.url,
           finishedAt: Date.now(),
@@ -1292,20 +1406,53 @@ export class SubscriptionService {
         currentLastVideoLink = video.url;
         currentDownloadCount += 1;
 
-        await db
+        const updateResult = await db
           .update(subscriptions)
           .set({
             lastTwitchVideoId: currentLastTwitchVideoId,
             lastVideoLink: currentLastVideoLink,
             downloadCount: currentDownloadCount,
           })
-          .where(eq(subscriptions.id, sub.id));
+          .where(eq(subscriptions.id, sub.id))
+          .returning({ id: subscriptions.id });
+
+        if (updateResult.length === 0) {
+          logger.warn(
+            `Twitch subscription ${sub.id} (${sub.author}) was deleted after download completed`
+          );
+          break;
+        }
+
+        notifySubscriptionDownloadResult({
+          taskTitle: downloadedTwitchTitle,
+          status: "success",
+          sourceUrl: video.url,
+        });
       } catch (downloadError: any) {
+        const errorMessage = getErrorMessage(
+          downloadError,
+          "Download failed"
+        );
+
+        if (twitchVideoDownloaded) {
+          logger.error(
+            `Error updating Twitch subscription after video download for ${sub.author}:`,
+            downloadError
+          );
+
+          notifySubscriptionDownloadResult({
+            taskTitle: downloadedTwitchTitle,
+            status: "fail",
+            sourceUrl: video.url,
+            error: `Subscription processing failed after download: ${errorMessage}`,
+          });
+          break;
+        }
+
         logger.error(
           `Error downloading Twitch subscription video for ${sub.author}:`,
           downloadError
         );
-
         storageService.addDownloadHistoryItem({
           id: uuidv4(),
           title: video.title || `Video from ${sub.author}`,
@@ -1313,8 +1460,14 @@ export class SubscriptionService {
           sourceUrl: video.url,
           finishedAt: Date.now(),
           status: "failed",
-          error: downloadError?.message || "Download failed",
+          error: errorMessage,
           subscriptionId: sub.id,
+        });
+        notifySubscriptionDownloadResult({
+          taskTitle: video.title || `Video from ${sub.author}`,
+          status: "fail",
+          sourceUrl: video.url,
+          error: errorMessage,
         });
         break;
       }

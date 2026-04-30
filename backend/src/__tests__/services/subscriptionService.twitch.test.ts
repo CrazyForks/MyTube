@@ -4,6 +4,7 @@ import { downloadYouTubeVideo } from "../../services/downloadService";
 import { getTwitchChannelVideos } from "../../services/downloaders/ytdlp/ytdlpTwitch";
 import * as storageService from "../../services/storageService";
 import { subscriptionService } from "../../services/subscriptionService";
+import { TelegramService } from "../../services/telegramService";
 import { twitchApiService } from "../../services/twitchService";
 
 vi.mock("../../db", () => ({
@@ -29,6 +30,12 @@ vi.mock("../../services/downloadService", () => ({
 vi.mock("../../services/storageService", () => ({
   addDownloadHistoryItem: vi.fn(),
   checkVideoDownloadBySourceId: vi.fn(),
+}));
+
+vi.mock("../../services/telegramService", () => ({
+  TelegramService: {
+    notifyTaskComplete: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 vi.mock("../../services/twitchService", () => ({
@@ -234,8 +241,8 @@ describe("SubscriptionService Twitch support", () => {
     const lockBuilder = createMockBuilder([{ id: sub.id }]);
     const channelRefreshBuilder = createMockBuilder([]);
     const existingMarkerBuilder = createMockBuilder([]);
-    const firstDownloadMarkerBuilder = createMockBuilder([]);
-    const secondDownloadMarkerBuilder = createMockBuilder([]);
+    const firstDownloadMarkerBuilder = createMockBuilder([{ id: sub.id }]);
+    const secondDownloadMarkerBuilder = createMockBuilder([{ id: sub.id }]);
     const updateBuilders = [
       lockBuilder,
       channelRefreshBuilder,
@@ -350,6 +357,16 @@ describe("SubscriptionService Twitch support", () => {
       "https://www.twitch.tv/videos/1004"
     );
     expect(storageService.addDownloadHistoryItem).toHaveBeenCalledTimes(2);
+    expect(TelegramService.notifyTaskComplete).toHaveBeenNthCalledWith(1, {
+      taskTitle: "Middle",
+      status: "success",
+      sourceUrl: "https://www.twitch.tv/videos/1003",
+    });
+    expect(TelegramService.notifyTaskComplete).toHaveBeenNthCalledWith(2, {
+      taskTitle: "Newest",
+      status: "success",
+      sourceUrl: "https://www.twitch.tv/videos/1004",
+    });
     expect(lockBuilder.set).toHaveBeenCalledWith(
       expect.objectContaining({
         lastCheck: expect.any(Number),
@@ -377,6 +394,140 @@ describe("SubscriptionService Twitch support", () => {
     });
   });
 
+  it("notifies Telegram when Twitch subscription downloads fail", async () => {
+    vi.mocked(storageService.checkVideoDownloadBySourceId).mockReturnValue({
+      found: false,
+    } as any);
+    vi.mocked(downloadYouTubeVideo).mockRejectedValueOnce(
+      new Error("twitch download failed")
+    );
+
+    await (subscriptionService as any).processTwitchSubscriptionVideos(
+      {
+        id: "sub-twitch-failed",
+        author: "Some Channel",
+        lastVideoLink: "",
+        downloadCount: 0,
+      },
+      [
+        {
+          id: "archive-failed",
+          url: "https://www.twitch.tv/videos/failed",
+          title: "Failed Twitch",
+          authorName: "Some Channel",
+        },
+      ]
+    );
+
+    expect(storageService.addDownloadHistoryItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Failed Twitch",
+        status: "failed",
+        sourceUrl: "https://www.twitch.tv/videos/failed",
+        error: "twitch download failed",
+      })
+    );
+    expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+      taskTitle: "Failed Twitch",
+      status: "fail",
+      sourceUrl: "https://www.twitch.tv/videos/failed",
+      error: "twitch download failed",
+    });
+  });
+
+  it("waits for Twitch marker updates before Telegram success notification", async () => {
+    const failingUpdateBuilder = createMockBuilder([]);
+    failingUpdateBuilder.then = (resolve: any, reject: any) =>
+      Promise.reject(new Error("twitch marker update failed")).then(
+        resolve,
+        reject
+      );
+
+    (db.update as any).mockReturnValue(failingUpdateBuilder);
+    vi.mocked(storageService.checkVideoDownloadBySourceId).mockReturnValue({
+      found: false,
+    } as any);
+    vi.mocked(downloadYouTubeVideo).mockResolvedValueOnce({
+      videoData: {
+        id: "video-twitch-marker-failed",
+        title: "Twitch Marker Video",
+        author: "Some Channel",
+      },
+    } as any);
+
+    await (subscriptionService as any).processTwitchSubscriptionVideos(
+      {
+        id: "sub-twitch-marker-failed",
+        author: "Some Channel",
+        lastVideoLink: "",
+        downloadCount: 0,
+      },
+      [
+        {
+          id: "archive-marker-failed",
+          url: "https://www.twitch.tv/videos/marker-failed",
+          title: "Twitch Marker",
+          authorName: "Some Channel",
+        },
+      ]
+    );
+
+    expect(TelegramService.notifyTaskComplete).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        taskTitle: "Twitch Marker Video",
+        status: "success",
+      })
+    );
+    expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+      taskTitle: "Twitch Marker Video",
+      status: "fail",
+      sourceUrl: "https://www.twitch.tv/videos/marker-failed",
+      error:
+        "Subscription processing failed after download: twitch marker update failed",
+    });
+    expect(storageService.addDownloadHistoryItem).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "failed",
+        sourceUrl: "https://www.twitch.tv/videos/marker-failed",
+      })
+    );
+  });
+
+  it("skips Twitch Telegram success when marker update affects no rows", async () => {
+    const deletedUpdateBuilder = createMockBuilder([]);
+
+    (db.update as any).mockReturnValue(deletedUpdateBuilder);
+    vi.mocked(storageService.checkVideoDownloadBySourceId).mockReturnValue({
+      found: false,
+    } as any);
+    vi.mocked(downloadYouTubeVideo).mockResolvedValueOnce({
+      videoData: {
+        id: "video-twitch-deleted",
+        title: "Twitch Deleted Video",
+        author: "Some Channel",
+      },
+    } as any);
+
+    await (subscriptionService as any).processTwitchSubscriptionVideos(
+      {
+        id: "sub-twitch-deleted",
+        author: "Some Channel",
+        lastVideoLink: "",
+        downloadCount: 0,
+      },
+      [
+        {
+          id: "archive-deleted",
+          url: "https://www.twitch.tv/videos/deleted",
+          title: "Twitch Deleted",
+          authorName: "Some Channel",
+        },
+      ]
+    );
+
+    expect(TelegramService.notifyTaskComplete).not.toHaveBeenCalled();
+  });
+
   it("falls back to yt-dlp polling when Helix requests fail for configured Twitch subscriptions", async () => {
     const sub = {
       id: "sub-twitch-api-fallback",
@@ -398,7 +549,7 @@ describe("SubscriptionService Twitch support", () => {
     const lockBuilder = createMockBuilder([{ id: sub.id }]);
     const channelRefreshBuilder = createMockBuilder([]);
     const existingMarkerBuilder = createMockBuilder([]);
-    const downloadMarkerBuilder = createMockBuilder([]);
+    const downloadMarkerBuilder = createMockBuilder([{ id: sub.id }]);
     const updateBuilders = [
       lockBuilder,
       channelRefreshBuilder,
@@ -512,8 +663,8 @@ describe("SubscriptionService Twitch support", () => {
     const lockBuilder = createMockBuilder([{ id: sub.id }]);
     const channelRefreshBuilder = createMockBuilder([]);
     const existingMarkerBuilder = createMockBuilder([]);
-    const firstDownloadMarkerBuilder = createMockBuilder([]);
-    const secondDownloadMarkerBuilder = createMockBuilder([]);
+    const firstDownloadMarkerBuilder = createMockBuilder([{ id: sub.id }]);
+    const secondDownloadMarkerBuilder = createMockBuilder([{ id: sub.id }]);
     const updateBuilders = [
       lockBuilder,
       channelRefreshBuilder,
