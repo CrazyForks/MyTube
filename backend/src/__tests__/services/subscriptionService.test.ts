@@ -8,6 +8,7 @@ import { YtDlpDownloader } from '../../services/downloaders/YtDlpDownloader';
 import * as downloadService from '../../services/downloadService';
 import * as storageService from '../../services/storageService';
 import { subscriptionService } from '../../services/subscriptionService';
+import { TelegramService } from '../../services/telegramService';
 import { executeYtDlpJson } from '../../utils/ytDlpUtils';
 
 // Test setup
@@ -33,6 +34,11 @@ vi.mock('../../db/schema', () => ({
 
 vi.mock('../../services/downloadService');
 vi.mock('../../services/storageService');
+vi.mock('../../services/telegramService', () => ({
+  TelegramService: {
+    notifyTaskComplete: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 vi.mock('../../services/subscriptionRetentionService', () => ({
   runSubscriptionRetentionCleanup: vi.fn().mockResolvedValue({}),
 }));
@@ -219,6 +225,11 @@ describe('SubscriptionService', () => {
       expect(storageService.addDownloadHistoryItem).toHaveBeenCalledWith(expect.objectContaining({
         status: 'success'
       }));
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'New Video',
+        status: 'success',
+        sourceUrl: 'new-link',
+      });
       expect(db.update).toHaveBeenCalled();
     });
 
@@ -252,6 +263,11 @@ describe('SubscriptionService', () => {
 
       expect(YtDlpDownloader.getLatestShortsUrl).toHaveBeenCalled();
       expect(downloadService.downloadYouTubeVideo).toHaveBeenCalledWith('new-short');
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'New Short',
+        status: 'success',
+        sourceUrl: 'new-short',
+      });
       expect(db.update).toHaveBeenCalled();
     });
 
@@ -988,6 +1004,63 @@ describe('SubscriptionService', () => {
           error: 'download exploded',
         })
       );
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'Video from FailAuthor',
+        status: 'fail',
+        sourceUrl: 'https://www.youtube.com/watch?v=failed',
+        error: 'download exploded',
+      });
+    });
+
+    it('should wait for video marker update before Telegram success notification', async () => {
+      const sub = {
+        id: 'marker-failed-sub',
+        author: 'MarkerFailAuthor',
+        platform: 'YouTube',
+        authorUrl: 'https://www.youtube.com/@marker-fail',
+        interval: 1,
+        lastCheck: 0,
+        lastVideoLink: 'old-link',
+      };
+
+      let callCount = 0;
+      mockBuilder.then = (cb: any, reject: any) => {
+        callCount++;
+        if (callCount === 1) return Promise.resolve([sub]).then(cb); // listSubscriptions
+        if (callCount === 2) return Promise.resolve([{ id: sub.id }]).then(cb); // lock update
+        if (callCount === 3) {
+          return Promise.reject(new Error('marker update failed')).then(cb, reject);
+        }
+        return Promise.resolve([]).then(cb);
+      };
+      (YtDlpDownloader.getLatestVideoUrl as any).mockResolvedValue(
+        'https://www.youtube.com/watch?v=marker-failed'
+      );
+      (downloadService.downloadYouTubeVideo as any).mockResolvedValue({
+        videoData: { id: 'video-marker-failed', title: 'Marker Failed Video' },
+      });
+
+      await subscriptionService.checkSubscriptions();
+
+      expect(TelegramService.notifyTaskComplete).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskTitle: 'Marker Failed Video',
+          status: 'success',
+        })
+      );
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'Marker Failed Video',
+        status: 'fail',
+        sourceUrl: 'https://www.youtube.com/watch?v=marker-failed',
+        error:
+          'Subscription processing failed after download: marker update failed',
+      });
+      expect(storageService.addDownloadHistoryItem).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'failed',
+          sourceUrl: 'https://www.youtube.com/watch?v=marker-failed',
+        })
+      );
     });
 
     it('should record failed shorts history when short download throws non-Error', async () => {
@@ -1025,6 +1098,102 @@ describe('SubscriptionService', () => {
           sourceUrl: 'new-short-link',
         })
       );
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'Short from ShortAuthor',
+        status: 'fail',
+        sourceUrl: 'new-short-link',
+        error: 'Download failed',
+      });
+    });
+
+    it('should wait for shorts marker update before Telegram success notification', async () => {
+      const sub = {
+        id: 'short-marker-failed-sub',
+        author: 'ShortMarkerAuthor',
+        platform: 'YouTube',
+        authorUrl: 'https://www.youtube.com/@short-marker',
+        interval: 1,
+        lastCheck: 0,
+        lastVideoLink: 'same-link',
+        lastShortVideoLink: 'old-short',
+        downloadShorts: 1,
+      };
+
+      let callCount = 0;
+      mockBuilder.then = (cb: any, reject: any) => {
+        callCount++;
+        if (callCount === 1) return Promise.resolve([sub]).then(cb); // listSubscriptions
+        if (callCount === 2) return Promise.resolve([{ id: sub.id }]).then(cb); // lastCheck update
+        if (callCount === 3) return Promise.resolve([{ id: sub.id }]).then(cb); // short check select
+        if (callCount === 4) {
+          return Promise.reject(new Error('short marker update failed')).then(cb, reject);
+        }
+        return Promise.resolve([]).then(cb);
+      };
+      (YtDlpDownloader.getLatestVideoUrl as any).mockResolvedValue('same-link');
+      (YtDlpDownloader.getLatestShortsUrl as any).mockResolvedValue(
+        'new-short-marker-link'
+      );
+      (downloadService.downloadYouTubeVideo as any).mockResolvedValue({
+        videoData: { id: 'short-marker-video', title: 'Short Marker Video' },
+      });
+
+      await subscriptionService.checkSubscriptions();
+
+      expect(TelegramService.notifyTaskComplete).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskTitle: 'Short Marker Video',
+          status: 'success',
+        })
+      );
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'Short Marker Video',
+        status: 'fail',
+        sourceUrl: 'new-short-marker-link',
+        error:
+          'Subscription processing failed after short download: short marker update failed',
+      });
+      expect(storageService.addDownloadHistoryItem).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'failed',
+          sourceUrl: 'new-short-marker-link',
+        })
+      );
+    });
+
+    it('should skip shorts Telegram success when marker update affects no rows', async () => {
+      const sub = {
+        id: 'short-deleted-sub',
+        author: 'ShortDeletedAuthor',
+        platform: 'YouTube',
+        authorUrl: 'https://www.youtube.com/@short-deleted',
+        interval: 1,
+        lastCheck: 0,
+        lastVideoLink: 'same-link',
+        lastShortVideoLink: 'old-short',
+        downloadShorts: 1,
+      };
+
+      let callCount = 0;
+      mockBuilder.then = (cb: any) => {
+        callCount++;
+        if (callCount === 1) return Promise.resolve([sub]).then(cb); // listSubscriptions
+        if (callCount === 2) return Promise.resolve([{ id: sub.id }]).then(cb); // lastCheck update
+        if (callCount === 3) return Promise.resolve([{ id: sub.id }]).then(cb); // short check select
+        if (callCount === 4) return Promise.resolve([]).then(cb); // short marker update
+        return Promise.resolve([]).then(cb);
+      };
+      (YtDlpDownloader.getLatestVideoUrl as any).mockResolvedValue('same-link');
+      (YtDlpDownloader.getLatestShortsUrl as any).mockResolvedValue(
+        'new-short-deleted-link'
+      );
+      (downloadService.downloadYouTubeVideo as any).mockResolvedValue({
+        videoData: { id: 'short-deleted-video', title: 'Short Deleted Video' },
+      });
+
+      await subscriptionService.checkSubscriptions();
+
+      expect(TelegramService.notifyTaskComplete).not.toHaveBeenCalled();
     });
 
     it('should ignore shorts lookup exceptions and continue processing', async () => {
