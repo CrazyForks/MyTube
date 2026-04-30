@@ -921,6 +921,49 @@ describe('SubscriptionService', () => {
       expect(storageService.addDownloadHistoryItem).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'success', sourceUrl: 'https://www.bilibili.com/video/BV1x' })
       );
+      expect(TelegramService.notifyTaskComplete).toHaveBeenCalledWith({
+        taskTitle: 'Bili Video',
+        status: 'success',
+        sourceUrl: 'https://www.bilibili.com/video/BV1x',
+      });
+    });
+
+    it('should skip YouTube Telegram success when marker update affects no rows', async () => {
+      const sub = {
+        id: 'video-deleted-sub',
+        author: 'VideoDeletedAuthor',
+        platform: 'YouTube',
+        authorUrl: 'https://www.youtube.com/@video-deleted',
+        interval: 1,
+        lastCheck: 0,
+        lastVideoLink: 'old-link',
+      };
+
+      let callCount = 0;
+      mockBuilder.then = (cb: any) => {
+        callCount++;
+        if (callCount === 1) return Promise.resolve([sub]).then(cb); // listSubscriptions
+        if (callCount === 2) return Promise.resolve([{ id: sub.id }]).then(cb); // lock update
+        if (callCount === 3) return Promise.resolve([]).then(cb); // marker update
+        return Promise.resolve([]).then(cb);
+      };
+      (YtDlpDownloader.getLatestVideoUrl as any).mockResolvedValue(
+        'https://www.youtube.com/watch?v=video-deleted'
+      );
+      (downloadService.downloadYouTubeVideo as any).mockResolvedValue({
+        videoData: { id: 'video-deleted', title: 'Video Deleted' },
+      });
+
+      await subscriptionService.checkSubscriptions();
+
+      expect(storageService.addDownloadHistoryItem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Video Deleted',
+          status: 'success',
+          sourceUrl: 'https://www.youtube.com/watch?v=video-deleted',
+        })
+      );
+      expect(TelegramService.notifyTaskComplete).not.toHaveBeenCalled();
     });
 
     it('should tolerate collection add failures and continue playlist subscription processing', async () => {
