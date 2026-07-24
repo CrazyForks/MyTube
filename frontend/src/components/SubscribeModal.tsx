@@ -16,7 +16,7 @@ import {
     TextField,
     Typography
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import DialogHeader from './DialogHeader';
 import SubscriptionFilenameTemplateField from './SubscriptionFilenameTemplateField';
@@ -89,8 +89,18 @@ const SubscribeModal: React.FC<SubscribeModalProps> = ({
         ? t('twitchSubscriptionVodsOnly')
         : t('subscribeDescription');
 
+    const resetFilenameTemplate = useCallback(() => {
+        setFilenameTemplate('');
+        setIsTemplateValid(true);
+    }, []);
+
+    useEffect(() => {
+        resetFilenameTemplate();
+    }, [resetFilenameTemplate, url]);
+
     const handleClose = () => {
         if (!isSubmitting) {
+            resetFilenameTemplate();
             onClose();
         }
     };
@@ -105,6 +115,7 @@ const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 downloadOrder,
                 filenameTemplate: filenameTemplate.trim() || null,
             });
+            resetFilenameTemplate();
             onClose();
         } catch {
             // Keep the modal open so the action can be retried.
