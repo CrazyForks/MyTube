@@ -3,9 +3,17 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SubscribeModal from '../SubscribeModal';
 
+const mockApiPost = vi.fn();
+
 // Mock language context
 vi.mock('../../contexts/LanguageContext', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock('../../utils/apiClient', () => ({
+    api: {
+        post: (...args: any[]) => mockApiPost(...args),
+    },
 }));
 
 describe('SubscribeModal', () => {
@@ -21,6 +29,14 @@ describe('SubscribeModal', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockApiPost.mockResolvedValue({
+            data: {
+                valid: true,
+                errors: [],
+                warnings: [],
+                rendered: null,
+            },
+        });
     });
 
     it('should render strictly when open', () => {
@@ -55,7 +71,7 @@ describe('SubscribeModal', () => {
 
         // Defaults: 60, false, false
         await user.click(screen.getByText('subscribe'));
-        expect(mockOnConfirm).toHaveBeenCalledWith(60, false, false, 'dateDesc');
+        expect(mockOnConfirm).toHaveBeenCalledWith({ interval: 60, downloadAllPrevious: false, downloadShorts: false, downloadOrder: 'dateDesc', filenameTemplate: null });
         expect(mockOnClose).toHaveBeenCalled();
     });
 
@@ -70,7 +86,40 @@ describe('SubscribeModal', () => {
         await user.click(screen.getByLabelText('downloadShorts'));
 
         await user.click(screen.getByText('subscribe'));
-        expect(mockOnConfirm).toHaveBeenCalledWith(30, true, true, 'dateDesc');
+        expect(mockOnConfirm).toHaveBeenCalledWith({ interval: 30, downloadAllPrevious: true, downloadShorts: true, downloadOrder: 'dateDesc', filenameTemplate: null });
+    });
+
+    it('resets the filename template when the target URL changes', async () => {
+        const user = userEvent.setup();
+        const { rerender } = render(<SubscribeModal {...defaultProps} />);
+        const templateInput = screen.getByLabelText('subscriptionFilenameTemplate');
+
+        await user.type(templateInput, 'custom-template');
+        expect(templateInput).toHaveValue('custom-template');
+
+        rerender(
+            <SubscribeModal
+                {...defaultProps}
+                url="http://next.example"
+                authorName="Next Author"
+            />
+        );
+
+        expect(screen.getByLabelText('subscriptionFilenameTemplate')).toHaveValue('');
+    });
+
+    it('resets the filename template when the modal closes', async () => {
+        const user = userEvent.setup();
+        render(<SubscribeModal {...defaultProps} />);
+        const templateInput = screen.getByLabelText('subscriptionFilenameTemplate');
+
+        await user.type(templateInput, 'custom-template');
+        expect(templateInput).toHaveValue('custom-template');
+
+        await user.click(screen.getByText('cancel'));
+
+        expect(mockOnClose).toHaveBeenCalled();
+        expect(screen.getByLabelText('subscriptionFilenameTemplate')).toHaveValue('');
     });
 
     it('should show download order only when download all previous is checked', async () => {
